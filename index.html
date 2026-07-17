@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notre Espace Privé</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0b0e14;
+            color: #e1e6ef;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #chat-container {
+            width: 100vw;
+            height: 100vh;
+            max-width: 480px;
+            background-color: #151a24;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* BARRE DU HAUT */
+        #chat-header {
+            background-color: #1f2633;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #00ffcc;
+            border-bottom: 2px solid #2a3447;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        /* ZONE DES MESSAGES */
+        #messages-zone {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 15px;
+            font-size: 1rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+            animation: apparaitre 0.2s ease-out;
+        }
+
+        @keyframes apparaitre {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Message des amis (Reçu) */
+        .msg-recu {
+            background-color: #262e3d;
+            color: #fff;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        /* Ton message (Envoyé) */
+        .msg-envoye {
+            background-color: #00b386;
+            color: #fff;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .pseudo {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #00ffcc;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        /* ZONE D'ÉCRITURE EN BAS */
+        #input-container {
+            background-color: #1f2633;
+            padding: 12px;
+            display: flex;
+            gap: 10px;
+            border-top: 2px solid #2a3447;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background-color: #151a24;
+            border: 1px solid #3a4760;
+            border-radius: 20px;
+            padding: 10px 15px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: #00ffcc;
+        }
+
+        button {
+            background-color: #00b386;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background-color: #00cc99;
+            transform: scale(1.05);
+        }
+
+        /* ÉCRAN DE CHOIX DU PSEUDO */
+        #screen-login {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #0b0e14;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            text-align: center;
+        }
+
+        #screen-login h2 {
+            color: #00ffcc;
+            margin-bottom: 20px;
+        }
+
+        #screen-login input {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #3a4760;
+            background-color: #151a24;
+            color: white;
+            font-size: 1.1rem;
+            text-align: center;
+            margin-bottom: 15px;
+            width: 200px;
+        }
+
+        #screen-login button {
+            border-radius: 20px;
+            width: auto;
+            padding: 10px 30px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ÉCRAN POUR CHOISIR SON PSEUDO -->
+    <div id="screen-login">
+        <h2>REJOINDRE LE CHAT</h2>
+        <input type="text" id="pseudoInput" placeholder="Ton Pseudo..." maxlength="15">
+        <button onclick="rejoindreChat()">ENTRER</button>
+    </div>
+
+    <!-- ZONE DE CHAT PRINCIPALE -->
+    <div id="chat-container">
+        <div id="chat-header">💬 CHAT ENTRE AMIS</div>
+        
+        <div id="messages-zone" id="chatBox">
+            <!-- Les messages s'afficheront ici -->
+        </div>
+
+        <div id="input-container">
+            <input type="text" id="messageInput" placeholder="Écris ton message ici..." autocomplete="off">
+            <button onclick="envoyerMessage()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        let monPseudo = "Anonyme";
+        const zoneMessages = document.getElementById("messages-zone");
+        const messageInput = document.getElementById("messageInput");
+
+        // Permet d'envoyer en appuyant sur la touche "Entrée"
+        messageInput.addEventListener("keypress", function(e) {
+            if (e.key === "Enter") envoyerMessage();
+        });
+
+        document.getElementById("pseudoInput").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") rejoindreChat();
+        });
+
+        function rejoindreChat() {
+            const input = document.getElementById("pseudoInput");
+            if (input.value.trim() !== "") {
+                monPseudo = input.value.trim();
+                document.getElementById("screen-login").style.display = "none";
+                
+                // Petit message de bienvenue automatique
+                ajouterMessageSysteme("Tu as rejoint l'espace de discussion !");
+            }
+        }
+
+        function envoyerMessage() {
+            const texte = messageInput.value.trim();
+            if (texte === "") return;
+
+            // 1. Créer et afficher ton message à droite
+            creerBulleMessage(monPseudo, texte, "msg-envoye");
+
+            // Réinitialiser la barre de texte
+            messageInput.value = "";
+
+            // 2. SIMULATION DE RÉPONSE D'UN AMI
+            // (Comme c'est un fichier local, j'ai mis un petit bot ami qui répond après 1 seconde pour tester !)
+            setTimeout(() => {
+                const reponsesAmis = [
+                    "Wesh ! Ça va ?",
+                    "Trop cool ton nouvel espace de chat ! 😎",
+                    "Tu fais quoi de beau ?",
+                    "Mdr t'as géré !",
+                    "On se capte après pour jouer ?"
+                ];
+                const reponseAleatoire = reponsesAmis[Math.floor(Math.random() * reponsesAmis.length)];
+                creerBulleMessage("Mon Pote", reponseAleatoire, "msg-recu");
+            }, 1200);
+        }
+
+        function creerBulleMessage(pseudo, texte, typeClasse) {
+            const bulle = document.createElement("div");
+            bulle.classList.add("message", typeClasse);
+
+            if (typeClasse === "msg-recu") {
+                bulle.innerHTML = `<span class="pseudo">${pseudo}</span>${texte}`;
+            } else {
+                bulle.innerHTML = `${texte}`;
+            }
+
+            zoneMessages.appendChild(bulle);
+            
+            // Descendre automatiquement l'écran vers le bas pour voir le nouveau message
+            zoneMessages.scrollTop = zoneMessages.scrollHeight;
+        }
+
+        function ajouterMessageSysteme(texte) {
+            const alerte = document.createElement("div");
+            alerte.style.cssText = "text-align:center; color:#6272a4; font-size:0.85rem; margin: 5px 0;";
+            alerte.innerText = texte;
+            zoneMessages.appendChild(alerte);
+        }
+    </script>
+</body>
+</html>
