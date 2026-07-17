@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exploration Urbaine : Le Bâtiment Abandonné</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #050505;
+            user-select: none;
+        }
+
+        /* INTERFACE D'ACCUEIL AVEC L'IMAGE EN FOND */
+        #menu-ecran {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            /* Chargement de l'image d'exploration urbaine en arrière-plan */
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&w=1920&q=80') no-repeat center center;
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            color: white;
+            text-align: center;
+        }
+
+        #menu-ecran h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            letter-spacing: 3px;
+            color: #f39c12;
+            text-shadow: 3px 3px 15px rgba(0,0,0,0.9), 0 0 10px rgba(243, 156, 18, 0.5);
+        }
+
+        #menu-ecran p {
+            font-size: 1.3rem;
+            color: #ddd;
+            text-shadow: 2px 2px 5px #000;
+            margin-bottom: 30px;
+            max-width: 600px;
+        }
+
+        #bouton-jouer {
+            padding: 15px 45px;
+            font-size: 1.4rem;
+            background-color: #f39c12;
+            color: black;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: 0.3s;
+            box-shadow: 0 0 20px rgba(243, 156, 18, 0.5);
+        }
+
+        #bouton-jouer:hover {
+            background-color: #f1c40f;
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(243, 156, 18, 0.8);
+        }
+
+        /* BARRE DE MISSION EN HAUT */
+        #mission-barre {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(15, 15, 15, 0.9);
+            color: #f39c12;
+            padding: 12px 30px;
+            border-radius: 6px;
+            border: 2px solid #f39c12;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            z-index: 5;
+            display: none;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.6);
+        }
+
+        /* STATUTS DU JOUEUR (VIE & BATTERIE) EN HAUT À GAUCHE */
+        #hud-stats {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            color: white;
+            z-index: 5;
+            display: none;
+            min-width: 180px;
+        }
+
+        .stat-barre-container {
+            width: 100%;
+            background-color: #333;
+            height: 12px;
+            border-radius: 6px;
+            margin-top: 5px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        #barre-vie {
+            width: 100%;
+            height: 100%;
+            background-color: #2ecc71;
+            transition: width 0.3s;
+        }
+
+        #barre-batterie {
+            width: 100%;
+            height: 100%;
+            background-color: #3498db;
+            transition: width 0.1s;
+        }
+
+        /* INSTRUCTIONS DE CONTRÔLE */
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            z-index: 5;
+            display: none;
+            background: rgba(0,0,0,0.8);
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            line-height: 1.4;
+        }
+
+        /* MESSAGE DE FIN */
+        #overlay-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 3rem;
+            font-weight: bold;
+            text-align: center;
+            z-index: 8;
+            display: none;
+            text-shadow: 3px 3px 15px #000;
+        }
+    </style>
+    <!-- Moteur 3D Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <!-- INTERFACE : BIENVENUE À L'EXPLORATION URBAINE -->
+    <div id="menu-ecran">
+        <h1>BIENVENUE À L'EXPLORATION URBAINE</h1>
+        <p>Trouve ton chemin dans le bâtiment abandonné, évite les débris et récupère la clé de sortie avant que la batterie de ta lampe ne tombe à plat !</p>
+        <button id="bouton-jouer">COMMENCER L'EXPLORATION</button>
+    </div>
+
+    <!-- OBJECTIFS ET STATS EN JEU -->
+    <div id="mission-barre">OBJECTIF : ENTRER DANS LE BÂTIMENT ABANDONNÉ</div>
+
+    <div id="hud-stats">
+        <div>❤️ VIE</div>
+        <div class="stat-barre-container"><div id="barre-vie"></div></div>
+        <div>🔦 BATTERIE LAMPE</div>
+        <div class="stat-barre-container"><div id="barre-batterie"></div></div>
+    </div>
+
+    <div id="overlay-message"></div>
+
+    <div id="instructions">
+        <strong>Contrôles :</strong><br>
+        • Déplacement : <b>Z S Q D</b> ou <b>Flèches</b><br>
+        • Caméra : Bouge la <b>Souris</b>
+    </div>
+
+    <script>
+        let scene, camera, renderer;
+        let etape = "approche"; // approche -> interieur -> fin
+        let touches = {};
+        let joueur = { x: 0, z: 25, rotation: 0, vitesse: 0.12, vie: 100, batterie: 100 };
+        
+        let usine, porteEntree, cleDoree, lampeTorche;
+        let piliers = [];
+        let debrisAnimes = [];
+
+        const missionBarre = document.getElementById("mission-barre");
+        const hudStats = document.getElementById("hud-stats");
+        const overlayMessage = document.getElementById("overlay-message");
+
+        // Démarrer le jeu au clic
+        document.getElementById("bouton-jouer").addEventListener("click", () => {
+            document.getElementById("menu-ecran").style.display = "none";
+            missionBarre.style.display = "block";
+            hudStats.style.display = "block";
+            document.getElementById("instructions").style.display = "block";
+            
+            document.body.requestPointerLock();
+            
+            init();
+            animate();
+        });
+
+        window.addEventListener('keydown', (e) => { touches[e.key.toLowerCase()] = true; });
+        window.addEventListener('keyup', (e) => { touches[e.key.toLowerCase()] = false; });
+        
+        window.addEventListener('mousemove', (e) => {
+            if (document.pointerLockElement === document.body) {
+                joueur.rotation -= e.movementX * 0.003;
+            }
+        });
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050508); // Ambiance nuit urbaine indus
+            scene.fog = new THREE.FogExp2(0x050508, 0.08);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(joueur.x, 1.6, joueur.z);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Faible lumière ambiante de lune
+            const lumièreLune = new THREE.AmbientLight(0x222233, 0.5);
+            scene.add(lumièreLune);
+
+            // LAMPE TORCHE DU JOUEUR (SpotLight attachée à la caméra)
+            lampeTorche = new THREE.SpotLight(0xffffff, 3, 20, Math.PI / 5, 0.5, 1);
+            scene.add(lampeTorche);
+            scene.add(lampeTorche.target);
+
+            creerZoneUrbaine();
+        }
+
+        function creerZoneUrbaine() {
+            // Sol en béton sale
+            const geoSol = new THREE.PlaneGeometry(100, 100);
+            const matSol = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+            const sol = new THREE.Mesh(geoSol, matSol);
+            sol.rotation.x = -Math.PI / 2;
+            scene.add(sol);
+
+            // STRUCTURE DU BÂTIMENT ABANDONNÉ
+            usine = new THREE.Group();
+            usine.position.set(0, 0, -5);
+
+            // Murs extérieurs en brique/béton sombre
+            const geoMurs = new THREE.BoxGeometry(16, 7, 16);
+            const matMurs = new THREE.MeshStandardMaterial({ color: 0x1f1f1f, roughness: 1.0 });
+            const murs = new THREE.Mesh(geoMurs, matMurs);
+            murs.position.y = 3.5;
+            usine.add(murs);
+
+            // Grande Porte d'entrée métallique rouillée
+            const geoPorte = new THREE.BoxGeometry(3, 4, 0.2);
+            const matPorte = new THREE.MeshStandardMaterial({ color: 0x3e2723 });
+            porteEntree = new THREE.Mesh(geoPorte, matPorte);
+            porteEntree.position.set(0, 2, 8.05);
+            usine.add(porteEntree);
+
+            scene.add(usine);
+        }
+
+        function chargerInterieurUsine() {
+            // Fermer et bloquer la porte derrière le joueur
+            porteEntree.position.z = 7.9;
+
+            // Création de gros piliers en béton à éviter à l'intérieur
+            for (let i = 0; i < 6; i++) {
+                const geoPilier = new THREE.BoxGeometry(0.8, 7, 0.8);
+                const matPilier = new THREE.MeshStandardMaterial({ color: 0x151515 });
+                const pilier = new THREE.Mesh(geoPilier, matPilier);
+                
+                let px = (Math.random() - 0.5) * 12;
+                let pz = -5 + (Math.random() - 0.5) * 12;
+                
+                pilier.position.set(px, 3.5, pz);
+                scene.add(pilier);
+                piliers.push(pilier);
+            }
+
+            // Générer des débris mouvants (solides qui s'effondrent du plafond)
+            for (let i = 0; i < 3; i++) {
+                const geoDebris = new THREE.BoxGeometry(1, 1, 1);
+                const matDebris = new THREE.MeshStandardMaterial({ color: 0x444444 });
+                const debris = new THREE.Mesh(geoDebris, matDebris);
+                
+                debris.position.set((Math.random() - 0.5) * 10, 6.5, -5 + (Math.random() - 0.5) * 10);
+                debris.vitesseChute = 0.05 + Math.random() * 0.05;
+                
+                scene.add(debris);
+                debrisAnimes.push(debris);
+            }
+
+            // Placer la clé d'évacuation au fond du bâtiment abandonné
+            const geoCle = new THREE.BoxGeometry(0.2, 0.6, 0.2);
+            const matCle = new THREE.MeshStandardMaterial({ color: 0xf39c12, emissive: 0x7e5109 });
+            cleDoree = new THREE.Mesh(geoCle, matCle);
+            cleDoree.position.set(0, 0.8, -11);
+            scene.add(cleDoree);
+        }
+
+        function animate() {
+            if (etape === "fin") return;
+
+            requestAnimationFrame(animate);
+
+            // --- DEPLACEMENTS ---
+            let depX = 0;
+            let depZ = 0;
+
+            if (touches['z'] || touches['w'] || touches['arrowup']) {
+                depX += -Math.sin(joueur.rotation) * joueur.vitesse;
+                depZ += -Math.cos(joueur.rotation) * joueur.vitesse;
+            }
+            if (touches['s'] || touches['arrowdown']) {
+                depX += Math.sin(joueur.rotation) * joueur.vitesse;
+                depZ += Math.cos(joueur.rotation) * joueur.vitesse;
+            }
+            if (touches['q'] || touches['a'] || touches['arrowleft']) {
+                depX += -Math.cos(joueur.rotation) * joueur.vitesse;
+                depZ += Math.sin(joueur.rotation) * joueur.vitesse;
+            }
+            if (touches['d'] || touches['arrowright']) {
+                depX += Math.cos(joueur.rotation) * joueur.vitesse;
+                depZ += -Math.sin(joueur.rotation) * joueur.vitesse;
+            }
+
+            joueur.x += depX;
+            joueur.z += depZ;
+
+            // --- GESTION DE LA BATTERIE DE LA LAMPE ---
+            if (joueur.batterie > 0) {
+                joueur.batterie -= 0.04; // La batterie se vide lentement
+                document.getElementById("barre-batterie").style.width = joueur.batterie + "%";
+                
+                // Si la batterie faiblit, la lumière baisse
+                lampeTorche.intensity = (joueur.batterie / 100) * 3;
+            } else {
+                lampeTorche.intensity = 0; // Plus de lumière !
+            }
+
+            // --- LOGIQUE DES ÉTAPES ---
+            if (etape === "approche") {
+                // Limites de la zone extérieure
+                if (joueur.z < 3.5) { 
+                    // Le joueur passe la porte
+                    etape = "interieur";
+                    missionBarre.innerHTML = "OBJECTIF : TROUVE LA CLÉ D'ÉVACUATION ET ÉVITE LES CHUTES DE DÉBRIS !";
+                    chargerInterieurUsine();
+                }
+            }
+
+            if (etape === "interieur") {
+                // Collisions avec les murs intérieurs de l'usine (taille 16x16 autour de z=-5)
+                if (joueur.x > 7) joueur.x = 7;
+                if (joueur.x < -7) joueur.x = -7;
+                if (joueur.z > 2.5) joueur.z = 2.5; // Bloqué à l'intérieur !
+                if (joueur.z < -12) joueur.z = -12;
+
+                // Animation des débris pièges qui tombent du toit
+                debrisAnimes.forEach(debris => {
+                    debris.position.y -= debris.vitesseChute;
+                    if (debris.position.y < 0.5) {
+                        debris.position.y = 6.5; // Recommence à tomber du toit
+                        debris.position.x = (Math.random() - 0.5) * 12;
+                    }
+
+                    // Collision joueur / débris
+                    let distDebris = Math.sqrt(Math.pow(joueur.x - debris.position.x, 2) + Math.pow(joueur.z - debris.position.z, 2));
+                    if (distDebris < 1.0 && debris.position.y < 2.0 && debris.position.y > 0.5) {
+                        joueur.vie -= 20;
+                        document.getElementById("barre-vie").style.width = joueur.vie + "%";
+                        debris.position.y = 6.5; // Reset débris après impact
+                        
+                        // Flash rouge de dégâts
+                        renderer.setClearColor(0xaa0000);
+                        setTimeout(() => renderer.setClearColor(0x050508), 100);
+
+                        if (joueur.vie <= 0) {
+                            perdrePartie();
+                        }
+                    }
+                });
+
+                // Ramasser la clé d'or
+                if (cleDoree) {
+                    cleDoree.rotation.y += 0.04;
+                    let distCle = Math.sqrt(Math.pow(joueur.x - cleDoree.position.x, 2) + Math.pow(joueur.z - cleDoree.position.z, 2));
+                    if (distCle < 1.0) {
+                        gagnerPartie();
+                    }
+                }
+            }
+
+            // MISE À JOUR CAMÉRA ET DIRECTION DE LA LAMPE TORCHE
+            camera.position.x = joueur.x;
+            camera.position.z = joueur.z;
+            camera.rotation.y = joueur.rotation;
+
+            lampeTorche.position.copy(camera.position);
+            // La lampe éclaire droit devant là où regarde la caméra
+            const cibleLampe = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).add(camera.position);
+            lampeTorche.target.position.copy(cibleLampe);
+
+            renderer.render(scene, camera);
+        }
+
+        function perdrePartie() {
+            etape = "fin";
+            document.exitPointerLock();
+            missionBarre.innerHTML = "GAME OVER";
+            missionBarre.style.borderColor = "#ff0000";
+            overlayMessage.style.display = "block";
+            overlayMessage.innerHTML = "TU AS ÉCHOUÉ... 💀<br><span style='font-size:1.5rem; color:#bbb;'>Le bâtiment abandonné a eu raison de toi.</span>";
+        }
+
+        function gagnerPartie() {
+            etape = "fin";
+            document.exitPointerLock();
+            missionBarre.innerHTML = "MISSION REUSSIE !";
+            missionBarre.style.borderColor = "#2ecc71";
+            overlayMessage.style.display = "block";
+            overlayMessage.innerHTML = "VICTOIRE ! 🏆<br><span style='font-size:1.5rem; color:#f39c12;'>Tu as trouvé la clé et réussi ton exploration urbaine !</span>";
+            if (cleDoree) scene.remove(cleDoree);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
