@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D Football Strike Mobile</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Arial Black', sans-serif;
+            background-color: #111;
+            user-select: none;
+            touch-action: none;
+        }
+
+        /* MENU ACCUEIL */
+        #menu-ecran {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #1a472a, #0a2315);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            color: white;
+            text-align: center;
+        }
+
+        #menu-ecran h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #4ade80;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.6);
+        }
+
+        button {
+            padding: 12px 40px;
+            font-size: 1.2rem;
+            background-color: #4ade80;
+            color: #0a2315;
+            border: none;
+            cursor: pointer;
+            border-radius: 30px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(74, 222, 128, 0.4);
+        }
+
+        /* TABLEAU D'AFFICHAGE */
+        #score-board {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 25px;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            z-index: 5;
+            display: none;
+            border: 2px solid #4ade80;
+        }
+
+        /* ZONE DU JOYSTICK TACTILE */
+        #zone-joystick {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            z-index: 5;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #bouton-joystick {
+            width: 50px;
+            height: 50px;
+            background: #4ade80;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.6);
+        }
+    </style>
+    <!-- Moteur 3D Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <!-- INTERFACE MOBILE -->
+    <div id="menu-ecran">
+        <h1>3D FOOT MOBILE</h1>
+        <p style="color: #ddd; margin-bottom: 25px; font-size: 0.9rem;">Utilise le joystick virtuel à gauche pour bouger !</p>
+        <button id="bouton-jouer">COUP D'ENVOI</button>
+    </div>
+
+    <div id="score-board">GOAL: <span id="score-val">0</span></div>
+
+    <!-- LE JOYSTICK VISUEL -->
+    <div id="zone-joystick" id="joystickContainer">
+        <div id="bouton-joystick"></div>
+    </div>
+
+    <script>
+        let scene, camera, renderer;
+        let jeuEnCours = false;
+        let score = 0;
+
+        let joueur, ballon, cages;
+        let defenseurs = [];
+
+        const terrainLargeur = 18;
+        const terrainLongueur = 28;
+
+        // Données du Joystick
+        let stickX = 0, stickY = 0;
+        let joystickActif = false;
+
+        document.getElementById("bouton-jouer").addEventListener("click", () => {
+            document.getElementById("menu-ecran").style.display = "none";
+            document.getElementById("score-board").style.display = "block";
+            document.getElementById("zone-joystick").style.display = "flex";
+            jeuEnCours = true;
+            init();
+            animate();
+        });
+
+        // --- GESTION DU TACTILE (JOYSTICK) ---
+        const zoneJoystick = document.getElementById("zone-joystick");
+        const boutonJoystick = document.getElementById("bouton-joystick");
+
+        zoneJoystick.addEventListener("touchstart", (e) => {
+            joystickActif = true;
+        });
+
+        zoneJoystick.addEventListener("touchmove", (e) => {
+            if (!joystickActif) return;
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            const rect = zoneJoystick.getBoundingClientRect();
+            const centreX = rect.left + rect.width / 2;
+            const centreY = rect.top + rect.height / 2;
+            
+            // Calculer la distance depuis le centre
+            let diffX = touch.clientX - centreX;
+            let diffY = touch.clientY - centreY;
+            let distance = Math.sqrt(diffX * diffX + diffY * diffY);
+            let maxDistance = rect.width / 2;
+
+            if (distance > maxDistance) {
+                diffX = (diffX / distance) * maxDistance;
+                diffY = (diffY / distance) * maxDistance;
+            }
+
+            // Bouger le bouton visuellement
+            boutonJoystick.style.transform = `translate(${diffX}px, ${diffY}px)`;
+
+            // Envoyer les directions au jeu (-1 à 1)
+            stickX = diffX / maxDistance;
+            stickY = diffY / maxDistance;
+        });
+
+        zoneJoystick.addEventListener("touchend", () => {
+            joystickActif = false;
+            stickX = 0;
+            stickY = 0;
+            boutonJoystick.style.transform = "translate(0px, 0px)";
+        });
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a331a);
+
+            // Caméra inclinée vers le bas adaptée aux écrans de smartphones
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 11, 14);
+            camera.lookAt(0, 0, -2);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            const lumiereAmbiante = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(lumiereAmbiante);
+
+            const projecteur = new THREE.DirectionalLight(0xffffff, 0.5);
+            projecteur.position.set(0, 15, 5);
+            scene.add(projecteur);
+
+            creerTerrain();
+            creerObjetsMobiles();
+        }
+
+        function creerTerrain() {
+            // Pelouse
+            const geoPelouse = new THREE.PlaneGeometry(terrainLargeur, terrainLongueur);
+            const matPelouse = new THREE.MeshStandardMaterial({ color: 0x34a853, roughness: 1 });
+            const pelouse = new THREE.Mesh(geoPelouse, matPelouse);
+            pelouse.rotation.x = -Math.PI / 2;
+            scene.add(pelouse);
+
+            // Cages Rouges tout au fond
+            cages = new THREE.Group();
+            const matCages = new THREE.MeshStandardMaterial({ color: 0xe63946 });
+            
+            const barre = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.2, 0.4), matCages);
+            barre.position.set(0, 1.8, -14);
+            cages.add(barre);
+
+            const potG = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.8, 0.4), matCages);
+            potG.position.set(-2.75, 0.9, -14);
+            cages.add(potG);
+
+            const potD = potG.clone();
+            potD.position.x = 2.75;
+            cages.add(potD);
+
+            scene.add(cages);
+        }
+
+        function creerObjetsMobiles() {
+            // Joueur (Cube Bleu)
+            joueur = new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, 1), new THREE.MeshStandardMaterial({ color: 0x1d4ed8 }));
+            joueur.position.set(0, 0.6, 8);
+            scene.add(joueur);
+
+            // Ballon (Sphère blanche)
+            ballon = new THREE.Mesh(new THREE.SphereGeometry(0.38, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+            ballon.position.set(0, 0.38, 0);
+            ballon.vitesseX = 0;
+            ballon.vitesseZ = 0;
+            scene.add(ballon);
+
+            // 2 Défenseurs (Cubes Rouges)
+            for (let i = 0; i < 2; i++) {
+                const def = new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, 1), new THREE.MeshStandardMaterial({ color: 0xe63946 }));
+                def.position.set((i === 0 ? -3 : 3), 0.6, -4);
+                scene.add(def);
+                defenseurs.push(def);
+            }
+        }
+
+        function animate() {
+            if (!jeuEnCours) return;
+
+            requestAnimationFrame(animate);
+
+            // Mouvement du joueur basé sur les données du Joystick Tactile
+            if (joystickActif) {
+                joueur.position.x += stickX * 0.16;
+                joueur.position.z += stickY * 0.16;
+            }
+
+            // Limites du terrain joueur
+            if (joueur.position.x < -terrainLargeur/2) joueur.position.x = -terrainLargeur/2;
+            if (joueur.position.x > terrainLargeur/2) joueur.position.x = terrainLargeur/2;
+            if (joueur.position.z < -terrainLongueur/2) joueur.position.z = -terrainLongueur/2;
+            if (joueur.position.z > terrainLongueur/2) joueur.position.z = terrainLongueur/2;
+
+            // IA Ennemis (Se déplacent vers le ballon)
+            defenseurs.forEach(def => {
+                if (ballon.position.z < 3) {
+                    if (def.position.x < ballon.position.x) def.position.x += 0.035;
+                    if (def.position.x > ballon.position.x) def.position.x -= 0.035;
+                }
+
+                // Dégagement ennemi si collision
+                if (def.position.distanceTo(ballon.position) < 0.85) {
+                    ballon.vitesseZ = 0.22;
+                    ballon.vitesseX = (Math.random() - 0.5) * 0.2;
+                }
+            });
+
+            // Collision Conduite de balle & Frappe du joueur
+            if (joueur.position.distanceTo(ballon.position) < 0.85) {
+                let dirX = ballon.position.x - joueur.position.x;
+                let dirZ = ballon.position.z - joueur.position.z;
+                ballon.vitesseX = dirX * 0.32;
+                ballon.vitesseZ = dirZ * 0.32;
+            }
+
+            // Physique de roulement de la balle
+            ballon.position.x += ballon.vitesseX;
+            ballon.position.z += ballon.vitesseZ;
+            ballon.vitesseX *= 0.95;
+            ballon.vitesseZ *= 0.95;
+
+            if (Math.abs(ballon.position.x) > terrainLargeur / 2) ballon.vitesseX *= -1;
+            if (ballon.position.z > terrainLongueur / 2) ballon.vitesseZ *= -1;
+
+            // Système de BUT
+            if (ballon.position.z < -13.8) {
+                if (ballon.position.x > -2.7 && ballon.position.x < 2.7) {
+                    marquerBut();
+                } else {
+                    ballon.vitesseZ *= -1;
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function marquerBut() {
+            score++;
+            document.getElementById("score-val").innerText = score;
+            renderer.setClearColor(0x4ade80); // Écran flash vert
+            
+            setTimeout(() => {
+                renderer.setClearColor(0x1a331a);
+                ballon.position.set(0, 0.38, 0);
+                ballon.vitesseX = 0;
+                ballon.vitesseZ = 0;
+                joueur.position.set(0, 0.6, 8);
+            }, 600);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
