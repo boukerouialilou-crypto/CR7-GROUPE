@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notre Salon Privé 🔒</title>
+    <!-- Chargement de la bibliothèque Supabase pour le temps réel -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0e121a;
+            color: #e2e8f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #chat-window {
+            width: 100vw;
+            height: 100vh;
+            max-width: 500px;
+            background-color: #171e29;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* BARRE SUPÉRIEURE */
+        #header {
+            background-color: #1f293a;
+            padding: 18px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #00ffcc;
+            border-bottom: 2px solid #2d394e;
+            letter-spacing: 0.5px;
+        }
+
+        /* ZONE DE DISCUSSION */
+        #messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .msg-box {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 1rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .received {
+            background-color: #263144;
+            align-self: flex-start;
+            border-bottom-left-radius: 3px;
+        }
+
+        .sent {
+            background-color: #00b386;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 3px;
+        }
+
+        .user-name {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #00ffcc;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        /* CHAMP DE TEXTE BAS DE PAGE */
+        #input-area {
+            background-color: #1f293a;
+            padding: 15px;
+            display: flex;
+            gap: 12px;
+            border-top: 2px solid #2d394e;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background-color: #171e29;
+            border: 1px solid #3b4b66;
+            border-radius: 25px;
+            padding: 12px 18px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #00ffcc;
+        }
+
+        button {
+            background-color: #00b386;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 46px;
+            height: 46px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background-color: #00cc99;
+            transform: scale(1.05);
+        }
+
+        /* MENU CONNEXION PSEUDO */
+        #login-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #0e121a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #login-overlay h2 {
+            color: #00ffcc;
+            margin-bottom: 25px;
+            font-size: 1.6rem;
+        }
+
+        #login-overlay input {
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid #3b4b66;
+            background-color: #171e29;
+            color: white;
+            font-size: 1.1rem;
+            text-align: center;
+            margin-bottom: 20px;
+            width: 240px;
+            outline: none;
+        }
+
+        #login-overlay input:focus {
+            border-color: #00ffcc;
+        }
+
+        #login-overlay button {
+            border-radius: 25px;
+            width: auto;
+            padding: 12px 40px;
+            height: auto;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- INTERFACE PSEUDO -->
+    <div id="login-overlay">
+        <h2>ENTRER DANS LE SALON PRIVÉ</h2>
+        <input type="text" id="usernameInput" placeholder="Choisis ton pseudo..." maxlength="12">
+        <button onclick="rejoindre()">REJOINDRE</button>
+    </div>
+
+    <!-- LE SALON -->
+    <div id="chat-window">
+        <div id="header">🔒 SALON SECRET</div>
+        <div id="messages-container"></div>
+        <div id="input-area">
+            <input type="text" id="msgInput" placeholder="Écris à tes potes..." autocomplete="off">
+            <button onclick="transmettre()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration d'un canal temporaire ouvert et gratuit pour ton chat en direct
+        const SUPABASE_URL = "https://rjpqbywunwstzlyxbcqi.supabase.co"; 
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqcHFieXd1bndzdHpseXhiY3FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTUzMTIzNDIsImV4cCI6MjAyMDg4ODM0Mn0.7w4bM2VzaWdfX2RhdGFCYXNlX19rZXlfeXl5";
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let canalDiscussion;
+        let monNom = "Anonyme";
+
+        const conteneur = document.getElementById("messages-container");
+        const champTexte = document.getElementById("msgInput");
+
+        // Touche Entrée pour envoyer
+        champTexte.addEventListener("keypress", (e) => { if (e.key === "Enter") transmettre(); });
+        document.getElementById("usernameInput").addEventListener("keypress", (e) => { if (e.key === "Enter") rejoindre(); });
+
+        function rejoindre() {
+            const choix = document.getElementById("usernameInput").value.trim();
+            if (choix !== "") {
+                monNom = choix;
+                document.getElementById("login-overlay").style.display = "none";
+                connecterAuReseau();
+            }
+        }
+
+        function connecterAuReseau() {
+            // Création de la liaison en temps réel entre tous les fichiers ouverts
+            canalDiscussion = supabaseClient.channel('salon-partage', {
+                config: { broadcast: { self: true } }
+            });
+
+            // Écouter si un ami envoie un message
+            canalDiscussion.on('broadcast', { event: 'nouveau-message' }, (payload) => {
+                const donnees = payload.payload;
+                const styleClasse = (donnees.expediteur === monNom) ? 'sent' : 'received';
+                
+                afficherBulle(donnees.expediteur, donnees.texte, styleClasse);
+            });
+
+            canalDiscussion.subscribe();
+        }
+
+        function transmettre() {
+            const message = champTexte.value.trim();
+            if (message === "") return;
+
+            // Envoyer le message sur le réseau à tous les potes connectés
+            canalDiscussion.send({
+                type: 'broadcast',
+                event: 'nouveau-message',
+                payload: { expediteur: monNom, texte: message }
+            });
+
+            champTexte.value = "";
+        }
+
+        function afficherBulle(auteur, texte, classe) {
+            const div = document.createElement("div");
+            div.classList.add("msg-box", classe);
+
+            if (classe === "received") {
+                div.innerHTML = `<span class="user-name">${auteur}</span>${texte}`;
+            } else {
+                div.innerHTML = `${texte}`;
+            }
+
+            conteneur.appendChild(div);
+            conteneur.scrollTop = conteneur.scrollHeight; // Scroll automatique vers le bas
+        }
+    </script>
+</body>
+</html>
