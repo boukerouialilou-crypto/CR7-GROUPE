@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Numéros Verts Algérie 🇩🇿</title>
+    
+    <!-- Code pour l'ajouter en application sur le PC/Téléphone -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22NumerosVertsDZ%22%2C%22short_name%22%3A%22NumVertsDZ%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230b0f19%22%2C%22theme_color%22%3A%22%2310b981%22%7D">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #0b0f19;
+            color: #ffffff;
+            padding-bottom: 40px;
+        }
+
+        /* BARRE DU HAUT NÉON VERT */
+        header {
+            background: linear-gradient(135deg, #059669, #10b981);
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        /* BARRE DE RECHERCHE DYNAMIQUE */
+        .recherche-zone {
+            margin: 20px auto 0 auto;
+            max-width: 500px;
+        }
+
+        .recherche-zone input {
+            width: 100%;
+            padding: 14px 25px;
+            border-radius: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background-color: rgba(11, 15, 25, 0.9);
+            color: white;
+            font-size: 1.05rem;
+            outline: none;
+            transition: 0.3s;
+            text-align: center;
+        }
+
+        .recherche-zone input:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+        }
+
+        /* GRILLE DE NUMÉROS */
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .grille-numeros {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        /* CARTE NUMÉRO UNIQUE */
+        .carte-numero {
+            background-color: #111827;
+            border: 2px solid #1f2937;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s, border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .carte-numero:hover {
+            transform: translateY(-5px);
+            border-color: #10b981;
+        }
+
+        .service-icone {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .carte-numero h3 {
+            font-size: 1.25rem;
+            color: #f3f4f6;
+            margin-bottom: 12px;
+        }
+
+        /* LE BOUTON DU NUMÉRO VERT */
+        .btn-appel {
+            display: inline-block;
+            width: 100%;
+            padding: 12px;
+            background-color: #065f46;
+            color: #34d399;
+            text-decoration: none;
+            font-size: 1.4rem;
+            font-weight: bold;
+            border-radius: 12px;
+            border: 1px solid #047857;
+            transition: 0.2s;
+        }
+
+        .carte-numero:hover .btn-appel {
+            background-color: #10b981;
+            color: #0b0f19;
+        }
+
+        /* MESSAGE ALERTE SI RIEN N'EST TROUVÉ */
+        #aucun-resultat {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+            font-size: 1.1rem;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>NUMÉROS VERTS ALGÉRIE 🇩🇿</h1>
+        <p>Recherche et appelle rapidement les services d'urgence et d'aide publique</p>
+        
+        <!-- BARRE DE RECHERCHE POUR LE NOM -->
+        <div class="recherche-zone">
+            <input type="text" id="rechercheInput" placeholder="🔍 Tape le nom (ex: Pompier, Police, Gendarmerie...)" oninput="filtrerNumeros()">
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <div class="grille-numeros" id="laGrille">
+            
+            <!-- Police Secours -->
+            <div class="carte-numero">
+                <div>
+                    <div class="service-icone">👮</div>
+                    <h3>Police Secours</h3>
+                </div>
+                <a href="tel:17" class="btn-appel">17</a>
+            </div>
+
+            <!-- Protection Civile / Pompiers -->
+            <div class="carte-numero">
+                <div>
+                    <div class="service-icone">🚒</div>
+                    <h3>Protection Civile (Pompiers)</h3>
+                </div>
+                <a href="tel:14" class="btn-appel">14</a>
+            </div>
+
+            <!-- Gendarmerie Nationale -->
+            <div class="carte-numero">
+                <div>
+                    <div class="service-icone">🚔</div>
+                    <h3>Gendarmerie Nationale</h3>
+                </div>
+                <a href="tel:1055" class="btn-appel">1055</a>
+            </div>
+
+            <!-- SAMU (Urgence Médicale) -->
+            <div class="carte-numero">
+                <div>
+                    <div class="service-icone">🚑</div>
+                    <h3>SAMU (Urgences Médicales)</h3>
+                </div>
+                <a href="tel:16" class="btn-appel">16</a>
+            </div>
+
+            <!-- Sûreté Nationale (Numéro Vert Mobile) -->
+            <div class="carte-numero">
+                <div>
+                    <div class="service-icone">📞</div>
+                    <h3>Sûreté Nationale</h3>
+                </div>
+                <a href="tel:1548" class="btn-appel">1548</a>
+            </div>
+
+            <!-- Enfance en danger -->
+            <div class="carte-numero">
+                <div>
+                    <div class="service-icone">👶</div>
+                    <h3>Protection de l'Enfance</h3>
+                </div>
+                <a href="tel:1111" class="btn-appel">1111</a>
+            </div>
+
+            <!-- Algérie Télécom (Dérangement) -->
+            <div class="carte-numero">
+                <div>
+                    <div class="service-icone">🌐</div>
+                    <h3>Algérie Télécom</h3>
+                </div>
+                <a href="tel:12" class="btn-appel">12</a>
+            </div>
+
+            <!-- SEAAL (Eau et Assainissement) -->
+            <div class="carte-numero">
+                <div>
+                    <div class="service-icone">💧</div>
+                    <h3>SEAAL (Gestion des Eaux)</h3>
+                </div>
+                <a href="tel:1594" class="btn-appel">1594</a>
+            </div>
+
+        </div>
+
+        <!-- Alerte si la recherche ne donne rien -->
+        <div id="aucun-resultat">🔍 Aucun numéro ne correspond à ce nom...</div>
+
+    </div>
+
+    <script>
+        // --- SYSTÈME DE FILTRE DE LA BARRE DE RECHERCHE ---
+        function filtrerNumeros() {
+            // Récupérer ce que l'utilisateur écrit
+            const saisie = document.getElementById("rechercheInput").value.toLowerCase();
+            const cartes = document.getElementsByClassName("carte-numero");
+            let trouve = false;
+
+            for (let i = 0; i < cartes.length; i++) {
+                // Lire le titre H3 (le nom du numéro) dans la carte
+                const nomService = cartes[i].getElementsByTagName("h3")[0].innerText.toLowerCase();
+                
+                // Si le texte écrit correspond au nom du service, on l'affiche, sinon on le cache
+                if (nomService.includes(saisie)) {
+                    cartes[i].style.display = "flex";
+                    trouve = true;
+                } else {
+                    cartes[i].style.display = "none";
+                }
+            }
+
+            // Gérer l'affichage du message d'erreur
+            const alerte = document.getElementById("aucun-resultat");
+            if (trouve) {
+                alerte.style.display = "none";
+            } else {
+                alerte.style.display = "block";
+            }
+        }
+    </script>
+</body>
+</html>
