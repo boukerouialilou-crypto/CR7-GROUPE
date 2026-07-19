@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recherche Facile</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      width: 100%;
+      max-width: 500px;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #333;
+      text-align: center;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #00f2fe;
+      border-radius: 12px;
+      font-size: 16px;
+      outline: none;
+      box-sizing: border-box;
+      margin-bottom: 15px;
+    }
+
+    /* Zone de réponse */
+    .answer-box {
+      padding: 15px 20px;
+      border-radius: 12px;
+      font-size: 16px;
+      line-height: 1.5;
+      background: #f8f9fa;
+      border-left: 5px solid #ff4b2b;
+      color: #333;
+    }
+
+    .suggestions {
+      margin-top: 15px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .chip {
+      display: inline-block;
+      background: #e0f7fa;
+      color: #00796b;
+      padding: 5px 10px;
+      border-radius: 15px;
+      margin: 3px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>🔎 Poser une question</h2>
+    
+    <!-- Barre de recherche -->
+    <input type="text" id="userInput" placeholder="Tapez votre question ici..." oninput="rechercherDirectement()" />
+
+    <!-- Zone d'affichage de la réponse -->
+    <div id="answerBox" class="answer-box">
+      Tapez un mot dans la barre ci-dessus pour voir la réponse apparaître.
+    </div>
+
+    <!-- Idées de mots à tester -->
+    <div class="suggestions">
+      <b>Exemples à tester :</b><br>
+      <span class="chip" onclick="remplir('bonjour')">bonjour</span>
+      <span class="chip" onclick="remplir('mot de passe')">mot de passe</span>
+      <span class="chip" onclick="remplir('prix')">prix</span>
+      <span class="chip" onclick="remplir('contact')">contact</span>
+    </div>
+  </div>
+
+  <script>
+    // LISTE DES QUESTIONS / RÉPONSES
+    // Tu peux en ajouter autant que tu veux ici !
+    const baseDeDonnees = [
+      {
+        motsCles: ["bonjour", "salut", "coucou", "hello"],
+        reponse: "👋 Coucou ! Comment puis-je t'aider aujourd'hui ?"
+      },
+      {
+        motsCles: ["mot de passe", "passe", "compte", "oublié"],
+        reponse: "🔑 Clique sur 'Mon Compte' puis sur 'Mot de passe oublié' pour en recharger un nouveau."
+      },
+      {
+        motsCles: ["prix", "gratuit", "payant", "combien"],
+        reponse: "🏷️ L'utilisation de base est 100% gratuite !"
+      },
+      {
+        motsCles: ["contact", "aide", "support", "email"],
+        reponse: "✉️ Tu peux nous écrire à contact@monapp.com."
+      }
+    ];
+
+    // Recherche automatique pendant la frappe
+    function rechercherDirectement() {
+      const saisie = document.getElementById("userInput").value.toLowerCase().trim();
+      const zoneReponse = document.getElementById("answerBox");
+
+      if (saisie === "") {
+        zoneReponse.style.borderLeftColor = "#ff4b2b";
+        zoneReponse.innerHTML = "Tapez un mot dans la barre ci-dessus pour voir la réponse apparaître.";
+        return;
+      }
+
+      // Chercher une correspondance
+      let trouve = baseDeDonnees.find(item => 
+        item.motsCles.some(mot => saisie.includes(mot))
+      );
+
+      if (trouve) {
+        zoneReponse.style.borderLeftColor = "#2ed573"; // Vert si trouvé
+        zoneReponse.innerHTML = trouve.reponse;
+      } else {
+        zoneReponse.style.borderLeftColor = "#ffa502"; // Orange si non trouvé
+        zoneReponse.innerHTML = "❌ Aucune réponse trouvée pour cette question. Vérifie l'orthographe ou teste un autre mot !";
+      }
+    }
+
+    // Clique sur une suggestion
+    function remplir(texte) {
+      document.getElementById("userInput").value = texte;
+      rechercherDirectement();
+    }
+  </script>
+
+</body>
+</html>
