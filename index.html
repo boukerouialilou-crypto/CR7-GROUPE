@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mes Délicieuses Recettes 🍳</title>
+  <style>
+    :root {
+      --primary-color: #ff6b6b;
+      --secondary-color: #feca57;
+      --background-color: #f7f9fb;
+      --card-color: #ffffff;
+      --text-color: #2d3436;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #ff9ff3 0%, #feca57 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .app-card {
+      background: var(--card-color);
+      width: 100%;
+      max-width: 550px;
+      padding: 30px;
+      border-radius: 24px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--primary-color);
+      margin-top: 0;
+      font-size: 28px;
+    }
+
+    /* Barre de recherche */
+    .search-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 14px 18px;
+      border: 2px solid #eee;
+      border-radius: 14px;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--primary-color);
+    }
+
+    button {
+      padding: 14px 22px;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+      transition: transform 0.2s, background-color 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      background-color: #ee5253;
+    }
+
+    /* Suggestions rapides */
+    .suggestions {
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #636e72;
+    }
+
+    .chip {
+      display: inline-block;
+      background: #ffeaa7;
+      color: #d63031;
+      padding: 6px 12px;
+      border-radius: 20px;
+      margin: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .chip:hover {
+      background: var(--secondary-color);
+    }
+
+    /* Zone d'affichage de la recette */
+    .recipe-box {
+      display: none;
+      padding: 20px;
+      border-radius: 16px;
+      background: #fff;
+      border: 2px solid #ffeaa7;
+      animation: fadeIn 0.4s ease-in-out;
+    }
+
+    .recipe-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px dashed #feca57;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+
+    .recipe-title {
+      font-size: 22px;
+      color: var(--primary-color);
+      margin: 0;
+    }
+
+    .recipe-details h3 {
+      color: #2d3436;
+      font-size: 16px;
+      margin-top: 15px;
+      margin-bottom: 8px;
+    }
+
+    .recipe-details ul, .recipe-details ol {
+      padding-left: 20px;
+      margin: 0;
+      color: #485460;
+      line-height: 1.6;
+    }
+
+    .error-box {
+      display: none;
+      padding: 15px;
+      border-radius: 14px;
+      background: #ffdddd;
+      color: #c0392b;
+      border-left: 5px solid #e74c3c;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-card">
+    <h1>👨‍🍳 Le Livre de Recettes</h1>
+
+    <!-- Recherche -->
+    <div class="search-container">
+      <input type="text" id="recipeInput" placeholder="Ex: crêpe, pizza, pancakes..." oninput="chercherRecette()" />
+      <button onclick="chercherRecette()">Chercher</button>
+    </div>
+
+    <!-- Idées rapides -->
+    <div class="suggestions">
+      <b>Exemples :</b>
+      <span class="chip" onclick="remplir('crêpe')">🥞 Crêpe</span>
+      <span class="chip" onclick="remplir('pancakes')">🥞 Pancakes</span>
+      <span class="chip" onclick="remplir('omelette')">🍳 Omelette</span>
+      <span class="chip" onclick="remplir('pizza')">🍕 Pizza Rapide</span>
+    </div>
+
+    <!-- Zone de résultat (Recette) -->
+    <div id="recipeBox" class="recipe-box">
+      <div class="recipe-header">
+        <h2 id="recipeTitle" class="recipe-title"></h2>
+      </div>
+      <div class="recipe-details">
+        <h3>🛒 Ingrédients :</h3>
+        <ul id="recipeIngredients"></ul>
+
+        <h3>👩‍🍳 Préparation :</h3>
+        <ol id="recipeSteps"></ol>
+      </div>
+    </div>
+
+    <!-- Message d'erreur -->
+    <div id="errorBox" class="error-box">
+      ❌ Aucune recette trouvée pour ce nom. Essayez d'écrire <b>crêpe</b>, <b>pancakes</b>, <b>omelette</b> ou <b>pizza</b>.
+    </div>
+  </div>
+
+  <script>
+    // BASE DE DONNÉES DES RECETTES
+    // Tu peux facilement en ajouter d'autres ici !
+    const livreDeRecettes = [
+      {
+        motsCles: ["crepe", "crêpe", "crepes", "crêpes"],
+        titre: "🥞 Recette des Crêpes Moelleuses",
+        ingredients: [
+          "250g de farine",
+          "4 œufs",
+          "500ml de lait",
+          "1 pincée de sel",
+          "2 cuillères à soupe de sucre",
+          "50g de beurre fondu"
+        ],
+        etapes: [
+          "Dans un saladier, versez la farine et faites un puits au milieu.",
+          "Ajoutez les œufs, le sel, le sucre et le beurre fondu.",
+          "Mélangez doucement avec un fouet en versant le lait petit à petit.",
+          "Laissez reposer la pâte 30 minutes (optionnel).",
+          "Faites cuire dans une poêle chaude légèrement huilée 1 à 2 minutes par côté."
+        ]
+      },
+      {
+        motsCles: ["pancake", "pancakes"],
+        titre: "🥞 Pancakes Américains Moelleux",
+        ingredients: [
+          "250g de farine",
+          "2 œufs",
+          "300ml de lait",
+          "1 sachet de levure chimique",
+          "2 cuillères à soupe de sucre",
+          "1 pincée de sel"
+        ],
+        etapes: [
+          "Mélangez la farine, la levure, le sucre et le sel dans un grand bol.",
+          "Dans un autre récipient, battez les œufs avec le lait.",
+          "Mélangez les deux préparations sans trop insister (la pâte doit rester un peu épaisse).",
+          "Faites cuire de petites louches de pâte dans une poêle beurrée. Retournez dès que des bulles apparaissent !"
+        ]
+      },
+      {
+        motsCles: ["omelette", "oeuf", "œuf", "oeufs", "œufs"],
+        titre: "🍳 Omelette Baveuse au Fromage",
+        ingredients: [
+          "3 œufs frais",
+          "1 cuillère à soupe de lait ou de crème",
+          "30g de fromage râpé",
+          "Sel, poivre et un peu de beurre"
+        ],
+        etapes: [
+          "Battez les œufs dans un bol avec le sel, le poivre et le lait.",
+          "Faites fondre le beurre dans une poêle à feu moyen.",
+          "Versez les œufs battus et remuez doucement pendant 1 minute.",
+          "Ajoutez le fromage râpé au centre, pliez l'omelette en deux et servez chaud."
+        ]
+      },
+      {
+        motsCles: ["pizza", "pizzas"],
+        titre: "🍕 Pizza Rapide Maison",
+        ingredients: [
+          "1 pâte à pizza préroulée",
+          "4 cuillères à soupe de sauce tomate",
+          "100g de mozzarella râpée",
+          "Herbes de Provence / Oregan",
+          "Garniture au choix (champignons, thon, poulet...)"
+        ],
+        etapes: [
+          "Préchauffez votre four à 210°C.",
+          "Déroulez la pâte à pizza sur une plaque de cuisson.",
+          "Étalez la sauce tomate, ajoutez la mozzarella et votre garniture.",
+          "Saupoudrez d'herbes de Provence et enfournez pendant 12 à 15 minutes."
+        ]
+      }
+    ];
+
+    function chercherRecette() {
+      const saisie = document.getElementById("recipeInput").value.toLowerCase().trim();
+      const recipeBox = document.getElementById("recipeBox");
+      const errorBox = document.getElementById("errorBox");
+
+      if (saisie === "") {
+        recipeBox.style.display = "none";
+        errorBox.style.display = "none";
+        return;
+      }
+
+      // Recherche de la recette
+      const recetteTrouvee = livreDeRecettes.find(recette =>
+        recette.motsCles.some(mot => saisie.includes(mot))
+      );
+
+      if (recetteTrouvee) {
+        // Remplir le titre
+        document.getElementById("recipeTitle").textContent = recetteTrouvee.titre;
+
+        // Remplir les ingrédients
+        const ingredientsList = document.getElementById("recipeIngredients");
+        ingredientsList.innerHTML = "";
+        recetteTrouvee.ingredients.forEach(ing => {
+          const li = document.createElement("li");
+          li.textContent = ing;
+          ingredientsList.appendChild(li);
+        });
+
+        // Remplir les étapes de préparation
+        const stepsList = document.getElementById("recipeSteps");
+        stepsList.innerHTML = "";
+        recetteTrouvee.etapes.forEach(etape => {
+          const li = document.createElement("li");
+          li.textContent = etape;
+          stepsList.appendChild(li);
+        });
+
+        // Afficher la boîte de recette
+        recipeBox.style.display = "block";
+        errorBox.style.display = "none";
+      } else {
+        recipeBox.style.display = "none";
+        errorBox.style.display = "block";
+      }
+    }
+
+    function remplir(texte) {
+      document.getElementById("recipeInput").value = texte;
+      chercherRecette();
+    }
+  </script>
+
+</body>
+</html>
