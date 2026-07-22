@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aventure Plateforme 🏃‍♂️</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #2f3542;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: white;
+      user-select: none;
+    }
+
+    h1 {
+      margin: 0 0 10px 0;
+      color: #ffa502;
+      font-size: 28px;
+    }
+
+    #gameContainer {
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    canvas {
+      background: linear-gradient(180deg, #70a1ff 0%, #eccc68 100%);
+      display: block;
+    }
+
+    /* Score */
+    .hud {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      font-size: 20px;
+      font-weight: bold;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px 15px;
+      border-radius: 20px;
+    }
+
+    /* Écran Game Over / Victoire */
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .overlay h2 {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+
+    .btn-restart {
+      padding: 12px 25px;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      background: #2ed573;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(46, 213, 115, 0.4);
+      transition: transform 0.2s;
+    }
+
+    .btn-restart:hover {
+      transform: scale(1.05);
+    }
+
+    .controls-info {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #a4b0be;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🏃‍♂️ L'Attrapeur de Pièces</h1>
+
+  <div id="gameContainer">
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    
+    <div class="hud">⭐ Score : <span id="scoreText">0</span></div>
+
+    <div class="overlay" id="overlay" style="display: none;">
+      <h2 id="overlayTitle">GAME OVER</h2>
+      <button class="btn-restart" onclick="restartGame()">REJOUER</button>
+    </div>
+  </div>
+
+  <div class="controls-info">
+    🎮 <b>Contrôles :</b> Flèches <b>←</b> et <b>→</b> pour marcher | Touche <b>ESPACE</b> ou <b>↑</b> pour sauter.
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // État du jeu
+    let isGameRunning = true;
+    let score = 0;
+
+    // Le Joueur
+    const player = {
+      x: 50,
+      y: 300,
+      width: 30,
+      height: 40,
+      color: '#ff4757',
+      vx: 0,
+      vy: 0,
+      speed: 5,
+      jumpPower: -12,
+      gravity: 0.6,
+      isGrounded: false
+    };
+
+    // Plates-formes
+    const platforms = [
+      { x: 0, y: 360, width: 600, height: 40, color: '#2ed573' }, // Sol principal
+      { x: 100, y: 270, width: 120, height: 15, color: '#747d8c' },
+      { x: 280, y: 210, width: 120, height: 15, color: '#747d8c' },
+      { x: 450, y: 150, width: 110, height: 15, color: '#747d8c' },
+      { x: 50, y: 120, width: 100, height: 15, color: '#747d8c' }
+    ];
+
+    // Pièces d'or à ramasser
+    let coins = [
+      { x: 140, y: 230, radius: 8, collected: false },
+      { x: 320, y: 170, radius: 8, collected: false },
+      { x: 490, y: 110, radius: 8, collected: false },
+      { x: 90, y: 80, radius: 8, collected: false }
+    ];
+
+    // Ennemi
+    const enemy = {
+      x: 280,
+      y: 190,
+      width: 25,
+      height: 20,
+      color: '#57606f',
+      speed: 2,
+      minX: 280,
+      maxX: 380
+    };
+
+    // Gestion du Clavier
+    const keys = {};
+    window.addEventListener('keydown', e => {
+      keys[e.key] = true;
+      if ((e.key === ' ' || e.key === 'ArrowUp') && player.isGrounded) {
+        player.vy = player.jumpPower;
+        player.isGrounded = false;
+      }
+    });
+    window.addEventListener('keyup', e => keys[e.key] = false);
+
+    // Boucle de jeu
+    function update() {
+      if (!isGameRunning) return;
+
+      // Déplacement latéral
+      player.vx = 0;
+      if (keys['ArrowLeft'] || keys['q'] || keys['Q']) player.vx = -player.speed;
+      if (keys['ArrowRight'] || keys['d'] || keys['D']) player.vx = +player.speed;
+
+      // Appliquer la gravité
+      player.vy += player.gravity;
+
+      // Nouvelle position du joueur
+      player.x += player.vx;
+      player.y += player.vy;
+
+      // Collision avec le bord de l'écran
+      if (player.x < 0) player.x = 0;
+      if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+      // Collision avec les plates-formes
+      player.isGrounded = false;
+      platforms.forEach(plat => {
+        if (
+          player.x < plat.x + plat.width &&
+          player.x + player.width > plat.x &&
+          player.y + player.height > plat.y &&
+          player.y + player.height - player.vy <= plat.y
+        ) {
+          player.y = plat.y - player.height;
+          player.vy = 0;
+          player.isGrounded = true;
+        }
+      });
+
+      // Déplacement de l'ennemi
+      enemy.x += enemy.speed;
+      if (enemy.x <= enemy.minX || enemy.x + enemy.width >= enemy.maxX) {
+        enemy.speed *= -1; // Inverser le sens
+      }
+
+      // Collision Joueur - Ennemi (Game Over)
+      if (
+        player.x < enemy.x + enemy.width &&
+        player.x + player.width > enemy.x &&
+        player.y < enemy.y + enemy.height &&
+        player.y + player.height > enemy.y
+      ) {
+        endGame("💥 GAME OVER", "#ff4757");
+      }
+
+      // Collecter les pièces
+      coins.forEach(coin => {
+        if (!coin.collected) {
+          const dist = Math.hypot((player.x + player.width / 2) - coin.x, (player.y + player.height / 2) - coin.y);
+          if (dist < coin.radius + player.width / 2) {
+            coin.collected = true;
+            score += 10;
+            document.getElementById('scoreText').textContent = score;
+
+            // Si toutes les pièces sont ramassées : Victoire !
+            if (coins.every(c => c.collected)) {
+              endGame("🎉 BRAVO ! TU AS GAGNÉ !", "#2ed573");
+            }
+          }
+        }
+      });
+    }
+
+    // Dessiner les éléments sur l'écran
+    function draw() {
+      // Effacer l'écran
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Dessiner les plates-formes
+      platforms.forEach(plat => {
+        ctx.fillStyle = plat.color;
+        ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
+      });
+
+      // Dessiner les pièces
+      coins.forEach(coin => {
+        if (!coin.collected) {
+          ctx.beginPath();
+          ctx.arc(coin.x, coin.y, coin.radius, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffa502';
+          ctx.fill();
+          ctx.strokeStyle = '#eccc68';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      });
+
+      // Dessiner l'ennemi
+      ctx.fillStyle = enemy.color;
+      ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+
+      // Dessiner le Joueur
+      ctx.fillStyle = player.color;
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+      // Yeux du joueur
+      ctx.fillStyle = 'white';
+      ctx.fillRect(player.x + 18, player.y + 8, 6, 6);
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      if (isGameRunning) {
+        requestAnimationFrame(gameLoop);
+      }
+    }
+
+    function endGame(title, color) {
+      isGameRunning = false;
+      const overlay = document.getElementById('overlay');
+      const titleText = document.getElementById('overlayTitle');
+      titleText.textContent = title;
+      titleText.style.color = color;
+      overlay.style.display = 'flex';
+    }
+
+    function restartGame() {
+      player.x = 50;
+      player.y = 300;
+      player.vx = 0;
+      player.vy = 0;
+      score = 0;
+      document.getElementById('scoreText').textContent = score;
+
+      coins.forEach(c => c.collected = false);
+
+      document.getElementById('overlay').style.display = 'none';
+      isGameRunning = true;
+      gameLoop();
+    }
+
+    // Démarrage
+    gameLoop();
+  </script>
+
+</body>
+</html>
