@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Espace d'Études Personnalisé</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #2d3748;
+        }
+        header {
+            background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
+            color: white;
+            text-align: center;
+            padding: 2rem 1rem;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        header h1 {
+            font-size: 2.2rem;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+            margin-bottom: 5px;
+        }
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        h2 {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+        .sec-1 h2 { background: linear-gradient(45deg, #11998e, #38ef7d); }
+        .sec-2 h2 { background: linear-gradient(45deg, #FF8008, #FFC837); }
+        .sec-3 h2 { background: linear-gradient(45deg, #8E2DE2, #4A00E0); }
+
+        /* Inputs & Form styling */
+        input[type="text"], input[type="date"], textarea, select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        input[type="text"]:focus, input[type="date"]:focus, textarea:focus, select:focus {
+            border-color: #764ba2;
+            outline: none;
+            background-color: #f7fafc;
+        }
+
+        /* Cartes par Jour */
+        .jour-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        }
+        .jour-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #2b6cb0;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #ebf8ff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .demi-journee-badge {
+            background: #feebc8;
+            color: #c05621;
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .period-header {
+            font-weight: 700;
+            font-size: 1rem;
+            margin: 12px 0 8px 0;
+            padding-left: 8px;
+            border-left: 4px solid;
+        }
+        .matin-header { color: #2b6cb0; border-color: #3182ce; }
+        .aprem-header { color: #dd6b20; border-color: #ed8936; }
+        .soir-header { color: #805ad5; border-color: #9f7aea; }
+
+        .matieres-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .matiere-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .matiere-box label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #718096;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        /* Section Devoirs */
+        .devoir-card {
+            background: #fffaf0;
+            border-left: 6px solid #ed8936;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .devoir-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        /* Section Examens */
+        .examen-card {
+            background: #f3e8ff;
+            border-left: 6px solid #9f7aea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Mon Carnet d'Études</h1>
+        <p>Organise tes séances, tes devoirs et la préparation de tes examens</p>
+    </header>
+
+    <div class="container">
+
+        <!-- SECTION 1 : EMPLOI DU TEMPS -->
+        <section class="sec-1">
+            <h2>📅 Mon Emploi du Temps (Dimanche à Jeudi)</h2>
+
+            <!-- DIMANCHE -->
+            <div class="jour-card">
+                <div class="jour-title">Dimanche</div>
+                
+                <div class="period-header matin-header">☀️ Matin (4 Matières)</div>
+                <div class="matieres-grid">
+                    <div class="matiere-box"><label>Matière 1</label><input type="text" placeholder="Ex: Mathématiques"></div>
+                    <div class="matiere-box"><label>Matière 2</label><input type="text" placeholder="Ex: Arabe"></div>
+                    <div class="matiere-box"><label>Matière 3</label><input type="text" placeholder="Ex: Physique"></div>
+                    <div class="matiere-box"><label>Matière 4</label><input type="text" placeholder="Ex: Français"></div>
+                </div>
+
+                <div class="period-header aprem-header">🌤️ Après-midi (4 Matières)</div>
+                <div class="matieres-grid">
+                    <div class="matiere-box"><label>Matière 5</label><input type="text" placeholder="Ex: Anglais"></div>
+                    <div class="matiere-box"><label>Matière 6</label><input type="text" placeholder="Ex: Histoire-Géo"></div>
+                    <div class="matiere-box"><label>Matière 7</label><input type="text" placeholder="Ex: Ed. Islamique"></div>
+                    <div class="matiere-box"><label>Matière 8</label><input type="text" placeholder="Ex: Ed. Civique"></div>
+                </div>
+
+                <div class="period-header soir-header">🌙 Révision du soir</div>
+                <div class="matieres-grid">
+                    <div class="matiere-box" style="grid-column: 1 / -1;"><input type="text" placeholder="Objectif de révision du soir..."></div>
+                </div>
+            </div>
+
+            <!-- LUNDI -->
+            <div class="jour-card">
+                <div class="jour-title">Lundi</div>
+                
+                <div class="period-header matin-header">☀️ Matin (4 Matières)</div>
+                <div class="matieres-grid">
+                    <div class="matiere-box"><label>Matière 1</label><input type="text" placeholder="Matière 1..."></div>
+                    <div class="matiere-box"><label>Matière 2</label><input type="text" placeholder="Matière 2..."></div>
+                    <div class="matiere-box"><label>Matière 3</label><input type="text" placeholder="Matière 3..."></div>
+                    <div class="matiere-box"><label>Matière 4</label><input type="text" placeholder="Matière 4..."></div>
+                </div>
+
+                <div class="period-header aprem-header">🌤️ Après-midi (4 Matières)</div>
+                <div class="matieres-grid">
+                    <div class="matiere-box"><label>Matière 5</label><input type="text" placeholder="Matière 5..."></div>
+                    <div class="matiere-box"><label>Matière 6</label><input type="text" placeholder="Matière 6..."></div>
+                    <div class="matiere-box"><label>Matière 7</label><input type="text" placeholder="Matière 7..."></div>
+                    <div class="matiere-box"><label>Matière 8</label><input type="text" placeholder="Matière 8..."></div>
+                </div>
+
+                <div class="period-header soir-header">🌙 Révision du soir</div>
+                <div class="matieres-grid">
+                    <div class="matiere-box" style="grid-column: 1 / -1;"><input type="text" placeholder="Objectif de révision du soir..."></div>
+                </div>
+            </div>
+
+            <!-- MARDI (DEMI-JOURNÉE) -->
+            <div class="jour-card">
+                <div class="jour-title">
+                    Mardi
+                    <span class="demi-journee-badge">Demi-journée (Matin seulement)</span>
+                </div>
+                
+                <div class="period-header matin-header">☀️ Matin (4 Matières)</div>
+                <div class="matieres-grid">
+                    <div class="matiere-box"><label>Matière 1</label><input type="text" placeholder="Matière 1..."></div>
+                    <div class="matiere-box"><label>Matière 2</label><input type="text" placeholder="Matière 2..."></div>
+                    <div class="matiere-box"><label>Matière 3</label><input type="text" placeholder="Matière 3..."></div>
+                    <div class="matiere-box"><label>Matière 4</label><input type="text" placeholder="Matière 4..."></div>
+                </div>
+
+                <div class="period-header soir-header">🌙 Révision / Temps libre du soir</div>
+                <div class="matieres-grid">
+                    <div class="matiere-box" style="grid-column: 1 / -1;"><input type="text" placeholder="Objectif de révision du soir..."></div>
+                </div>
+            </div>
+
+            <!-- MERCREDI -->
+            <div class="jour-card">
+                <div class="jour-title">Mercredi</div>
+                
+                <div class="period-header matin-header">☀️ Matin (4 Matières)</div>
+                <div class="matieres-grid">
+                    <div class="matiere-box"><label>Matière 1</label><input type="text" placeholder="Matière 1..."></div>
+                    <div class="matiere-box"><label>Matière 2</label><input type="text" placeholder="Matière 2..."></div>
+                    <div class="matiere-box"><label>Matière 3</label><input type="text" placeholder="Matière 3..."></div>
+                    <div class="matiere-box"><label>Matière 4</label><input type="text" placeholder="Matière 4..."></div>
+                </div>
+
+                <div class="period-header aprem-header">🌤️ Après-midi (4 Matières)</div>
+                <div class="matieres-grid">
+                    <div class="matiere-box"><label>Matière 5</label><input type="text" placeholder="Matière 5..."></div>
+                    <div class="matiere-box"><label>Matière 6</label><input type="text" placeholder="Matière 6..."></div>
+                    <div class="matiere-box"><label>Matière 7</label><input type="text" placeholder="Matière 7..."></div>
+                    <div class="matiere-box"><label>Matière 8</label><input type="text" placeholder="Matière 8..."></div>
+                </div>
+
+                <div class="period-header soir-header">🌙 Révision du soir</div>
+                <div class="matieres-grid">
+                    <div class="matiere-box" style="grid-column: 1 / -1;"><input type="text" placeholder="Objectif de révision du soir..."></div>
+                </div>
+            </div>
+
+            <!-- JEUDI -->
+            <div class="jour-card">
+                <div class="jour-title">Jeudi</div>
+                
+                <div class="period-header matin-header">☀️ Matin (4 Matières)</div>
+                <div class="matieres-grid">
+                    <div class="matiere-box"><label>Matière 1</label><input type="text" placeholder="Matière 1..."></div>
+                    <div class="matiere-box"><label>Matière 2</label><input type="text" placeholder="Matière 2..."></div>
+                    <div class="matiere-box"><label>Matière 3</label><input type="text" placeholder="Matière 3..."></div>
+                    <div class="matiere-box"><label>Matière 4</label><input type="text" placeholder="Matière 4..."></div>
+                </div>
+
+                <div class="period-header aprem-header">🌤️ Après-midi (4 Matières)</div>
+                <div class="matieres-grid">
+                    <div class="matiere-box"><label>Matière 5</label><input type="text" placeholder="Matière 5..."></div>
+                    <div class="matiere-box"><label>Matière 6</label><input type="text" placeholder="Matière 6..."></div>
+                    <div class="matiere-box"><label>Matière 7</label><input type="text" placeholder="Matière 7..."></div>
+                    <div class="matiere-box"><label>Matière 8</label><input type="text" placeholder="Matière 8..."></div>
+                </div>
+
+                <div class="period-header soir-header">🌙 Bilan & Rangement de la semaine</div>
+                <div class="matieres-grid">
+                    <div class="matiere-box" style="grid-column: 1 / -1;"><input type="text" placeholder="Bilan de la semaine..."></div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- SECTION 2 : MES DEVOIRS -->
+        <section class="sec-2">
+            <h2>📝 Mes Devoirs à Faire</h2>
+            
+            <div class="devoir-card">
+                <div class="devoir-grid">
+                    <input type="text" placeholder="Matière (ex: Mathématiques)">
+                    <input type="date">
+                    <select>
+                        <option>🔴 À faire</option>
+                        <option>🟡 En cours</option>
+                        <option>🟢 Terminé</option>
+                    </select>
+                </div>
+                <input type="text" placeholder="Détail du devoir (ex: Exercices 3 et 4 p. 52)">
+            </div>
+
+            <div class="devoir-card">
+                <div class="devoir-grid">
+                    <input type="text" placeholder="Matière (ex: Français)">
+                    <input type="date">
+                    <select>
+                        <option>🔴 À faire</option>
+                        <option>🟡 En cours</option>
+                        <option>🟢 Terminé</option>
+                    </select>
+                </div>
+                <input type="text" placeholder="Détail du devoir...">
+            </div>
+
+            <div class="devoir-card">
+                <div class="devoir-grid">
+                    <input type="text" placeholder="Matière...">
+                    <input type="date">
+                    <select>
+                        <option>🔴 À faire</option>
+                        <option>🟡 En cours</option>
+                        <option>🟢 Terminé</option>
+                    </select>
+                </div>
+                <input type="text" placeholder="Détail du devoir...">
+            </div>
+        </section>
+
+        <!-- SECTION 3 : MES EXAMENS -->
+        <section class="sec-3">
+            <h2>🎓 Mes Examens & Préparation</h2>
+            
+            <div class="examen-card">
+                <div class="devoir-grid">
+                    <input type="text" placeholder="Matière de l'examen">
+                    <input type="date">
+                </div>
+                <textarea placeholder="Comment va être l'examen ? (Chapitres à réviser, type d'exercices, consignes du prof...)"></textarea>
+            </div>
+
+            <div class="examen-card">
+                <div class="devoir-grid">
+                    <input type="text" placeholder="Matière de l'examen">
+                    <input type="date">
+                </div>
+                <textarea placeholder="Comment va être l'examen ? (Chapitres à réviser, type d'exercices, consignes du prof...)"></textarea>
+            </div>
+
+            <div class="examen-card">
+                <div class="devoir-grid">
+                    <input type="text" placeholder="Matière de l'examen">
+                    <input type="date">
+                </div>
+                <textarea placeholder="Comment va être l'examen ? (Chapitres à réviser, type d'exercices, consignes du prof...)"></textarea>
+            </div>
+        </section>
+
+    </div>
+
+    <footer>
+        <p>Mon Carnet d'Études Personnel</p>
+    </footer>
+
+</body>
+</html>
