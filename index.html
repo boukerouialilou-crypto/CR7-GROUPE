@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon Cahier — Organiseur scolaire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-wall: #322822;
+    --bg-board: #1E3A34;
+    --bg-board-2: #193029;
+    --frame-a: #8B6644;
+    --frame-b: #5C3D28;
+    --chalk-white: #F5F3E7;
+    --chalk-dim: rgba(245,243,231,0.55);
+    --chalk-faint: rgba(245,243,231,0.18);
+    --chalk-yellow: #F2C879;
+    --chalk-red: #E88A8A;
+    --chalk-green: #9BC98A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background: radial-gradient(ellipse at 50% 0%, #46392f 0%, var(--bg-wall) 60%);
+    font-family:'Work Sans', sans-serif;
+    color: var(--chalk-white);
+    display:flex;
+    justify-content:center;
+    padding: 28px 14px 60px;
+  }
+  .frame{
+    width:100%;
+    max-width: 980px;
+    background: linear-gradient(155deg, var(--frame-a), var(--frame-b) 55%, var(--frame-a));
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: 0 25px 60px rgba(0,0,0,.55), inset 0 0 0 2px rgba(255,255,255,.06);
+  }
+  .board{
+    position:relative;
+    background:
+      radial-gradient(ellipse 500px 200px at 15% 8%, rgba(255,255,255,.035), transparent 60%),
+      radial-gradient(ellipse 400px 180px at 85% 90%, rgba(255,255,255,.03), transparent 60%),
+      linear-gradient(160deg, var(--bg-board), var(--bg-board-2));
+    border-radius: 4px;
+    padding: 30px 28px 34px;
+    overflow:hidden;
+  }
+  .dust{
+    position:absolute; border-radius:50%; background: var(--chalk-faint);
+    animation: fall linear infinite;
+    pointer-events:none;
+  }
+  @keyframes fall{
+    from{ transform: translateY(-10px); opacity:0; }
+    10%{ opacity:1; }
+    to{ transform: translateY(420px); opacity:0; }
+  }
+  @media (prefers-reduced-motion: reduce){ .dust{ animation:none; display:none; } }
+
+  header{ text-align:center; margin-bottom: 22px; position:relative; z-index:1; }
+  h1{
+    font-family:'Kalam', cursive;
+    font-weight:700;
+    font-size: clamp(2rem, 5vw, 2.7rem);
+    margin: 0 0 4px;
+    letter-spacing: .5px;
+  }
+  .underline{ width: 190px; height:10px; margin: 0 auto 10px; display:block; }
+  .subtitle{ color: var(--chalk-dim); font-size: .92rem; margin:0; }
+
+  nav.tabs{
+    display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+    margin-bottom: 26px; position:relative; z-index:1;
+  }
+  .tab-btn{
+    font-family:'Kalam', cursive; font-size: 1.05rem; font-weight:700;
+    background: transparent; color: var(--chalk-dim);
+    border: 2px dashed var(--chalk-faint); border-radius: 10px;
+    padding: 8px 18px; cursor:pointer; transition: all .15s ease;
+  }
+  .tab-btn:hover{ color: var(--chalk-white); border-color: var(--chalk-dim); }
+  .tab-btn.active{
+    color: var(--bg-board); background: var(--chalk-yellow);
+    border-style: solid; border-color: var(--chalk-yellow);
+  }
+  .tab-btn:focus-visible{ outline: 2px solid var(--chalk-white); outline-offset:2px; }
+
+  section.panel{ display:none; position:relative; z-index:1; }
+  section.panel.active{ display:block; animation: appear .25s ease; }
+  @keyframes appear{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+
+  h2.panel-title{
+    font-family:'Kalam', cursive; font-size:1.4rem; margin: 0 0 14px; color: var(--chalk-white);
+  }
+
+  /* ---- Schedule ---- */
+  .week-grid{
+    display:grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+  }
+  @media (max-width: 720px){ .week-grid{ grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 460px){ .week-grid{ grid-template-columns: 1fr; } }
+  .day-col{ display:flex; flex-direction:column; gap:8px; }
+  .day-label{
+    font-family:'Kalam', cursive; text-align:center; font-size:1.05rem;
+    color: var(--chalk-white); border-bottom: 2px dashed var(--chalk-faint);
+    padding-bottom:6px; margin-bottom:2px;
+  }
+  .class-card{
+    border-radius:8px; padding:9px 10px; font-size:.85rem;
+    border-left: 4px solid; position:relative;
+    background: rgba(245,243,231,0.06);
+  }
+  .class-card .time{ font-family:'JetBrains Mono', monospace; font-size:.72rem; color: var(--chalk-dim); display:block; }
+  .class-card .subj{ font-weight:600; }
+  .class-card .room{ font-size:.75rem; color: var(--chalk-dim); }
+  .del-btn{
+    position:absolute; top:4px; right:6px; background:none; border:none;
+    color: var(--chalk-dim); cursor:pointer; font-size:.85rem; line-height:1;
+    padding:2px; border-radius:4px;
+  }
+  .del-btn:hover{ color: var(--chalk-red); }
+
+  .empty-note{
+    border:2px dashed var(--chalk-faint); border-radius:10px; padding:16px;
+    text-align:center; color: var(--chalk-dim); font-size:.9rem; font-style:italic;
+  }
+
+  /* ---- Forms ---- */
+  .add-toggle{
+    font-family:'Kalam', cursive; font-size:1rem; font-weight:700;
+    background:none; border: 2px solid var(--chalk-faint); color: var(--chalk-white);
+    border-radius:10px; padding:8px 16px; cursor:pointer; margin-top:16px;
+  }
+  .add-toggle:hover{ border-color: var(--chalk-yellow); color: var(--chalk-yellow); }
+  form.add-form{
+    display:none; margin-top:14px; padding:16px; border-radius:10px;
+    background: rgba(245,243,231,0.05); border:1px solid var(--chalk-faint);
+  }
+  form.add-form.open{ display:grid; gap:10px; }
+  form.add-form .row{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+  @media (max-width:520px){ form.add-form .row{ grid-template-columns: 1fr; } }
+  label{ font-size:.78rem; color: var(--chalk-dim); display:block; margin-bottom:4px; }
+  input, select, textarea{
+    width:100%; font-family:'Work Sans', sans-serif; font-size:.9rem;
+    background: rgba(245,243,231,0.08); border:1px solid var(--chalk-faint);
+    color: var(--chalk-white); border-radius:6px; padding:8px 10px;
+  }
+  textarea{ resize:vertical; min-height:56px; }
+  input:focus, select:focus, textarea:focus{ outline:2px solid var(--chalk-yellow); outline-offset:1px; }
+  .submit-btn{
+    justify-self:start; font-family:'Kalam', cursive; font-weight:700; font-size:1rem;
+    background: var(--chalk-yellow); color: var(--bg-board); border:none;
+    border-radius:8px; padding:9px 20px; cursor:pointer; margin-top:4px;
+  }
+  .submit-btn:hover{ filter:brightness(1.08); }
+
+  /* ---- Homework & Exams lists ---- */
+  .list{ display:flex; flex-direction:column; gap:10px; }
+  .item-card{
+    border-left:4px solid; border-radius:8px; padding:12px 14px;
+    background: rgba(245,243,231,0.05); position:relative;
+  }
+  .item-top{ display:flex; align-items:flex-start; gap:10px; }
+  .item-card .subj-tag{
+    font-size:.7rem; text-transform:uppercase; letter-spacing:.5px;
+    color: var(--chalk-dim); font-weight:600;
+  }
+  .item-card h3{ font-family:'Kalam', cursive; font-size:1.1rem; margin: 2px 0 4px; }
+  .item-card p.desc{ font-size:.85rem; color: var(--chalk-dim); margin:4px 0 0; }
+  .item-meta{ font-family:'JetBrains Mono', monospace; font-size:.75rem; color: var(--chalk-dim); margin-top:6px; }
+  .badge{
+    font-family:'JetBrains Mono', monospace; font-weight:700; font-size:.75rem;
+    padding:2px 8px; border-radius:20px; display:inline-block;
+  }
+  .badge.urgent{ background: rgba(232,138,138,.18); color: var(--chalk-red); }
+  .badge.soon{ background: rgba(242,200,121,.2); color: var(--chalk-yellow); }
+  .badge.ok{ background: rgba(155,201,138,.18); color: var(--chalk-green); }
+  .badge.done{ background: rgba(245,243,231,.1); color: var(--chalk-dim); }
+  .check{
+    width:20px; height:20px; border:2px solid var(--chalk-dim); border-radius:5px;
+    cursor:pointer; flex-shrink:0; margin-top:3px; display:flex; align-items:center; justify-content:center;
+    background:transparent; color: var(--bg-board); font-size:.75rem;
+  }
+  .check.checked{ background: var(--chalk-green); border-color: var(--chalk-green); }
+  .item-card.done h3{ text-decoration: line-through; color: var(--chalk-dim); }
+  .section-label{
+    font-family:'Kalam', cursive; font-size:.95rem; color: var(--chalk-dim);
+    margin: 18px 0 8px; border-bottom:1px dashed var(--chalk-faint); padding-bottom:4px;
+  }
+  .loading{ text-align:center; color: var(--chalk-dim); padding: 30px; font-style: italic; }
+  footer.reset-row{ text-align:center; margin-top: 30px; position:relative; z-index:1; }
+  .reset-btn{
+    background:none; border:none; color: var(--chalk-faint); font-size:.75rem;
+    text-decoration: underline; cursor:pointer;
+  }
+  .reset-btn:hover{ color: var(--chalk-red); }
+</style>
+</head>
+<body>
+
+<div class="frame">
+  <div class="board" id="board">
+    <div id="dustLayer"></div>
+
+    <header>
+      <h1>Mon Cahier</h1>
+      <svg class="underline" viewBox="0 0 190 10" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 6 Q 48 1, 95 6 T 188 5" stroke="#F2C879" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+      <p class="subtitle">Emploi du temps · devoirs · examens — dimanche à jeudi</p>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="schedule">📅 Emploi du temps</button>
+      <button class="tab-btn" data-tab="homework">✏️ Devoirs</button>
+      <button class="tab-btn" data-tab="exams">📝 Examens</button>
+    </nav>
+
+    <section class="panel active" id="panel-schedule">
+      <h2 class="panel-title">Emploi du temps</h2>
+      <div id="scheduleGrid" class="week-grid"></div>
+      <button class="add-toggle" data-form="scheduleForm">+ Ajouter un cours</button>
+      <form class="add-form" id="scheduleForm">
+        <div class="row">
+          <div>
+            <label for="sJour">Jour</label>
+            <select id="sJour" required></select>
+          </div>
+          <div>
+            <label for="sMatiere">Matière</label>
+            <select id="sMatiere" required></select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="sDebut">Heure de début</label>
+            <input type="time" id="sDebut" required>
+          </div>
+          <div>
+            <label for="sFin">Heure de fin</label>
+            <input type="time" id="sFin" required>
+          </div>
+        </div>
+        <div>
+          <label for="sSalle">Salle (optionnel)</label>
+          <input type="text" id="sSalle" placeholder="ex : Salle 12">
+        </div>
+        <button type="submit" class="submit-btn">Ajouter au programme</button>
+      </form>
+    </section>
+
+    <section class="panel" id="panel-homework">
+      <h2 class="panel-title">Mes devoirs</h2>
+      <div id="homeworkList" class="list"></div>
+      <button class="add-toggle" data-form="homeworkForm">+ Ajouter un devoir</button>
+      <form class="add-form" id="homeworkForm">
+        <div class="row">
+          <div>
+            <label for="hMatiere">Matière</label>
+            <select id="hMatiere" required></select>
+          </div>
+          <div>
+            <label for="hDate">À rendre le</label>
+            <input type="date" id="hDate" required>
+          </div>
+        </div>
+        <div>
+          <label for="hTitre">Titre</label>
+          <input type="text" id="hTitre" placeholder="ex : Exercices page 42" required>
+        </div>
+        <div>
+          <label for="hDesc">Description (optionnel)</label>
+          <textarea id="hDesc" placeholder="Détails du devoir..."></textarea>
+        </div>
+        <button type="submit" class="submit-btn">Ajouter le devoir</button>
+      </form>
+    </section>
+
+    <section class="panel" id="panel-exams">
+      <h2 class="panel-title">Mes examens</h2>
+      <div id="examsList" class="list"></div>
+      <button class="add-toggle" data-form="examForm">+ Ajouter un examen</button>
+      <form class="add-form" id="examForm">
+        <div class="row">
+          <div>
+            <label for="eMatiere">Matière</label>
+            <select id="eMatiere" required></select>
+          </div>
+          <div>
+            <label for="eDate">Date de l'examen</label>
+            <input type="date" id="eDate" required>
+          </div>
+        </div>
+        <div>
+          <label for="eChapitres">Chapitres / sujets</label>
+          <input type="text" id="eChapitres" placeholder="ex : Chapitres 3, 4 et 5">
+        </div>
+        <div>
+          <label for="eNotes">Notes de révision (optionnel)</label>
+          <textarea id="eNotes" placeholder="Points à revoir..."></textarea>
+        </div>
+        <button type="submit" class="submit-btn">Ajouter l'examen</button>
+      </form>
+    </section>
+
+  </div>
+</div>
+
+<footer class="reset-row">
+  <button class="reset-btn" id="resetBtn">Tout effacer</button>
+</footer>
+
+<script>
+const SUBJECTS = [
+  "Arabe","Français","Anglais","Éducation islamique","Éducation civique",
+  "Histoire","Géographie","Sport","Mathématiques","Sciences physiques","Sciences humaines"
+];
+const SUBJECT_COLORS = {
+  "Arabe": "#F2C879",
+  "Français": "#7FB3D5",
+  "Anglais": "#8FD1BA",
+  "Éducation islamique": "#C9A6E0",
+  "Éducation civique": "#E8956D",
+  "Histoire": "#E19DB0",
+  "Géographie": "#9BC98A",
+  "Sport": "#74C7D8",
+  "Mathématiques": "#F0A8A8",
+  "Sciences physiques": "#B8CDF0",
+  "Sciences humaines": "#D8C08A"
+};
+const DAYS = ["Dimanche","Lundi","Mardi","Mercredi","Jeudi"];
+
+let schedule = [];
+let homework = [];
+let exams = [];
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+async function loadData(key){
+  try{
+    const res = await window.storage.get(key, false);
+    return res ? JSON.parse(res.value) : [];
+  }catch(e){
+    return [];
+  }
+}
+async function saveData(key, value){
+  try{
+    await window.storage.set(key, JSON.stringify(value), false);
+  }catch(e){
+    console.error('Erreur de sauvegarde', e);
+  }
+}
+
+function fillSelect(sel){
+  sel.innerHTML = SUBJECTS.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+function renderDust(){
+  const layer = document.getElementById('dustLayer');
+  for(let i=0;i<10;i++){
+    const d = document.createElement('div');
+    d.className = 'dust';
+    const size = 2 + Math.random()*3;
+    d.style.width = size+'px';
+    d.style.height = size+'px';
+    d.style.left = (Math.random()*100)+'%';
+    d.style.top = '-10px';
+    d.style.animationDuration = (8 + Math.random()*10)+'s';
+    d.style.animationDelay = (Math.random()*10)+'s';
+    layer.appendChild(d);
+  }
+}
+
+/* ---------- Schedule ---------- */
+function renderSchedule(){
+  const grid = document.getElementById('scheduleGrid');
+  grid.innerHTML = '';
+  DAYS.forEach(day => {
+    const col = document.createElement('div');
+    col.className = 'day-col';
+    const label = document.createElement('div');
+    label.className = 'day-label';
+    label.textContent = day;
+    col.appendChild(label);
+
+    const items = schedule.filter(c => c.day === day).sort((a,b) => a.start.localeCompare(b.start));
+    if(items.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'empty-note';
+      empty.style.fontSize = '.75rem';
+      empty.style.padding = '10px';
+      empty.textContent = 'Rien de prévu';
+      col.appendChild(empty);
+    }
+    items.forEach(c => {
+      const card = document.createElement('div');
+      card.className = 'class-card';
+      card.style.borderLeftColor = SUBJECT_COLORS[c.subject] || '#fff';
+      card.innerHTML = `
+        <button class="del-btn" title="Supprimer" data-del-schedule="${c.id}">✕</button>
+        <span class="time">${c.start} – ${c.end}</span>
+        <span class="subj">${c.subject}</span>
+        ${c.room ? `<span class="room">${c.room}</span>` : ''}
+      `;
+      col.appendChild(card);
+    });
+    grid.appendChild(col);
+  });
+
+  grid.querySelectorAll('[data-del-schedule]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-del-schedule');
+      schedule = schedule.filter(c => c.id !== id);
+      await saveData('schedule', schedule);
+      renderSchedule();
+    });
+  });
+}
+
+/* ---------- Homework ---------- */
+function daysUntil(dateStr){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(dateStr + 'T00:00:00');
+  return Math.round((target - today) / 86400000);
+}
+
+function renderHomework(){
+  const list = document.getElementById('homeworkList');
+  list.innerHTML = '';
+  if(homework.length === 0){
+    list.innerHTML = '<div class="empty-note">Aucun devoir pour l\'instant — ajoute-en un !</div>';
+    return;
+  }
+  const pending = homework.filter(h => !h.done).sort((a,b) => a.date.localeCompare(b.date));
+  const done = homework.filter(h => h.done).sort((a,b) => b.date.localeCompare(a.date));
+
+  pending.forEach(h => list.appendChild(homeworkCard(h)));
+  if(done.length){
+    const lbl = document.createElement('div');
+    lbl.className = 'section-label';
+    lbl.textContent = 'Devoirs terminés';
+    list.appendChild(lbl);
+    done.forEach(h => list.appendChild(homeworkCard(h)));
+  }
+}
+
+function homeworkCard(h){
+  const div = document.createElement('div');
+  const diff = daysUntil(h.date);
+  let badge = '';
+  if(h.done){
+    badge = `<span class="badge done">Fait</span>`;
+  } else if(diff < 0){
+    badge = `<span class="badge urgent">En retard</span>`;
+  } else if(diff <= 1){
+    badge = `<span class="badge urgent">${diff === 0 ? "Aujourd'hui" : 'Demain'}</span>`;
+  } else if(diff <= 3){
+    badge = `<span class="badge soon">Dans ${diff} jours</span>`;
+  } else {
+    badge = `<span class="badge ok">${new Date(h.date+'T00:00:00').toLocaleDateString('fr-FR', {day:'numeric', month:'short'})}</span>`;
+  }
+  div.className = 'item-card' + (h.done ? ' done' : '');
+  div.style.borderLeftColor = SUBJECT_COLORS[h.subject] || '#fff';
+  div.innerHTML = `
+    <button class="del-btn" title="Supprimer" data-del-hw="${h.id}">✕</button>
+    <div class="item-top">
+      <button class="check ${h.done ? 'checked' : ''}" data-check-hw="${h.id}" aria-label="Marquer comme fait">${h.done ? '✓' : ''}</button>
+      <div>
+        <div class="subj-tag">${h.subject}</div>
+        <h3>${escapeHtml(h.title)}</h3>
+        ${h.description ? `<p class="desc">${escapeHtml(h.description)}</p>` : ''}
+        <div class="item-meta">${badge}</div>
+      </div>
+    </div>
+  `;
+  div.querySelector('[data-del-hw]').addEventListener('click', async () => {
+    homework = homework.filter(x => x.id !== h.id);
+    await saveData('homework', homework);
+    renderHomework();
+  });
+  div.querySelector('[data-check-hw]').addEventListener('click', async () => {
+    h.done = !h.done;
+    await saveData('homework', homework);
+    renderHomework();
+  });
+  return div;
+}
+
+/* ---------- Exams ---------- */
+function renderExams(){
+  const list = document.getElementById('examsList');
+  list.innerHTML = '';
+  if(exams.length === 0){
+    list.innerHTML = '<div class="empty-note">Aucun examen programmé pour l\'instant.</div>';
+    return;
+  }
+  const upcoming = exams.filter(e => daysUntil(e.date) >= 0).sort((a,b) => a.date.localeCompare(b.date));
+  const past = exams.filter(e => daysUntil(e.date) < 0).sort((a,b) => b.date.localeCompare(a.date));
+
+  upcoming.forEach(e => list.appendChild(examCard(e)));
+  if(past.length){
+    const lbl = document.createElement('div');
+    lbl.className = 'section-label';
+    lbl.textContent = 'Examens passés';
+    list.appendChild(lbl);
+    past.forEach(e => list.appendChild(examCard(e)));
+  }
+}
+
+function examCard(e){
+  const div = document.createElement('div');
+  const diff = daysUntil(e.date);
+  let badge;
+  if(diff < 0) badge = `<span class="badge done">Terminé</span>`;
+  else if(diff === 0) badge = `<span class="badge urgent">Aujourd'hui</span>`;
+  else if(diff <= 3) badge = `<span class="badge urgent">J-${diff}</span>`;
+  else if(diff <= 7) badge = `<span class="badge soon">J-${diff}</span>`;
+  else badge = `<span class="badge ok">J-${diff}</span>`;
+
+  div.className = 'item-card';
+  div.style.borderLeftColor = SUBJECT_COLORS[e.subject] || '#fff';
+  div.innerHTML = `
+    <button class="del-btn" title="Supprimer" data-del-exam="${e.id}">✕</button>
+    <div class="subj-tag">${e.subject}</div>
+    <h3>${new Date(e.date+'T00:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})}</h3>
+    ${e.topics ? `<p class="desc"><strong>Sujets :</strong> ${escapeHtml(e.topics)}</p>` : ''}
+    ${e.notes ? `<p class="desc">${escapeHtml(e.notes)}</p>` : ''}
+    <div class="item-meta">${badge}</div>
+  `;
+  div.querySelector('[data-del-exam]').addEventListener('click', async () => {
+    exams = exams.filter(x => x.id !== e.id);
+    await saveData('exams', exams);
+    renderExams();
+  });
+  return div;
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ---------- Add-form toggles ---------- */
+document.querySelectorAll('.add-toggle').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const form = document.getElementById(btn.dataset.form);
+    form.classList.toggle('open');
+  });
+});
+
+/* ---------- Form submits ---------- */
+document.getElementById('scheduleForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const entry = {
+    id: uid(),
+    day: document.getElementById('sJour').value,
+    subject: document.getElementById('sMatiere').value,
+    start: document.getElementById('sDebut').value,
+    end: document.getElementById('sFin').value,
+    room: document.getElementById('sSalle').value.trim()
+  };
+  schedule.push(entry);
+  await saveData('schedule', schedule);
+  renderSchedule();
+  ev.target.reset();
+  ev.target.classList.remove('open');
+});
+
+document.getElementById('homeworkForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const entry = {
+    id: uid(),
+    subject: document.getElementById('hMatiere').value,
+    title: document.getElementById('hTitre').value.trim(),
+    date: document.getElementById('hDate').value,
+    description: document.getElementById('hDesc').value.trim(),
+    done: false
+  };
+  homework.push(entry);
+  await saveData('homework', homework);
+  renderHomework();
+  ev.target.reset();
+  ev.target.classList.remove('open');
+});
+
+document.getElementById('examForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const entry = {
+    id: uid(),
+    subject: document.getElementById('eMatiere').value,
+    date: document.getElementById('eDate').value,
+    topics: document.getElementById('eChapitres').value.trim(),
+    notes: document.getElementById('eNotes').value.trim()
+  };
+  exams.push(entry);
+  await saveData('exams', exams);
+  renderExams();
+  ev.target.reset();
+  ev.target.classList.remove('open');
+});
+
+/* ---------- Reset ---------- */
+document.getElementById('resetBtn').addEventListener('click', async () => {
+  if(!confirm('Effacer toutes les données (emploi du temps, devoirs, examens) ?')) return;
+  schedule = []; homework = []; exams = [];
+  await Promise.all([saveData('schedule', []), saveData('homework', []), saveData('exams', [])]);
+  renderSchedule(); renderHomework(); renderExams();
+});
+
+/* ---------- Init ---------- */
+async function init(){
+  fillSelect(document.getElementById('sJour'));
+  document.getElementById('sJour').innerHTML = DAYS.map(d => `<option value="${d}">${d}</option>`).join('');
+  fillSelect(document.getElementById('sMatiere'));
+  fillSelect(document.getElementById('hMatiere'));
+  fillSelect(document.getElementById('eMatiere'));
+
+  renderDust();
+
+  [schedule, homework, exams] = await Promise.all([
+    loadData('schedule'), loadData('homework'), loadData('exams')
+  ]);
+
+  renderSchedule();
+  renderHomework();
+  renderExams();
+}
+init();
+</script>
+</body>
+</html>
