@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon Assistant Scolaire & EPS</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    h1 { text-align: center; color: #1e3c72; margin-bottom: 30px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+    .card { background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .card-eps { border-top: 4px solid #27ae60; }
+    h2 { font-size: 1.1rem; color: #2a5298; border-bottom: 2px solid #eef2f5; padding-bottom: 10px; margin-top: 0; }
+    .card-eps h2 { color: #27ae60; }
+    form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+    input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; }
+    button { background: #2a5298; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+    button:hover { background: #1e3c72; }
+    .btn-eps { background: #27ae60; }
+    .btn-eps:hover { background: #1e8449; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { background: #f8f9fa; border: 1px solid #e9ecef; border-left: 4px solid #2a5298; padding: 10px; border-radius: 4px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .li-eps { border-left-color: #27ae60; }
+    .btn-delete { background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+    .btn-delete:hover { background: #c0392b; }
+    .date-badge { font-size: 0.8rem; color: #666; font-style: italic; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>📚 Mon Organisation Scolaire</h1>
+
+    <div class="grid">
+      <div class="card">
+        <h2>📅 Emploi du Temps</h2>
+        <form id="form-prog">
+          <input type="text" id="prog-jour" placeholder="Jour & Heure" required>
+          <input type="text" id="prog-cours" placeholder="Matière / Salle" required>
+          <button type="submit">Ajouter</button>
+        </form>
+        <ul id="list-prog"></ul>
+      </div>
+
+      <div class="card">
+        <h2>📝 Devoirs</h2>
+        <form id="form-dev">
+          <input type="text" id="dev-titre" placeholder="Sujet du devoir" required>
+          <input type="date" id="dev-date" required>
+          <button type="submit">Ajouter</button>
+        </form>
+        <ul id="list-dev"></ul>
+      </div>
+
+      <div class="card">
+        <h2>🎯 Examens</h2>
+        <form id="form-exam">
+          <input type="text" id="exam-nom" placeholder="Matière / Chapitre" required>
+          <input type="date" id="exam-date" required>
+          <button type="submit">Ajouter</button>
+        </form>
+        <ul id="list-exam"></ul>
+      </div>
+
+      <div class="card card-eps">
+        <h2>🏃 EPS & Sport</h2>
+        <form id="form-eps">
+          <input type="text" id="eps-sport" placeholder="Sport (ex: Course, Gym, Natation)" required>
+          <input type="text" id="eps-mat" placeholder="Matériel à prendre (ex: Tenue, Gourde)" required>
+          <button type="submit" class="btn-eps">Ajouter séance EPS</button>
+        </form>
+        <ul id="list-eps"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let appData = JSON.parse(localStorage.getItem('monAppScolaire')) || {
+      programme: [],
+      devoirs: [],
+      examens: [],
+      eps: []
+    };
+
+    function saveAndRender() {
+      localStorage.setItem('monAppScolaire', JSON.stringify(appData));
+      renderList('prog', appData.programme);
+      renderList('dev', appData.devoirs, true);
+      renderList('exam', appData.examens, true);
+      renderEpsList(appData.eps);
+    }
+
+    function renderList(type, items, hasDate = false) {
+      const listEl = document.getElementById(`list-${type}`);
+      listEl.innerHTML = '';
+      items.forEach((item, index) => {
+        const li = document.createElement('li');
+        const textSpan = document.createElement('span');
+        textSpan.innerHTML = hasDate 
+          ? `<strong>${item.title}</strong><br><span class="date-badge">Pour le : ${item.date}</span>`
+          : `<strong>${item.jour}</strong> : ${item.cours}`;
+        
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '✕';
+        delBtn.className = 'btn-delete';
+        delBtn.onclick = () => removeItem(type, index);
+
+        li.appendChild(textSpan);
+        li.appendChild(delBtn);
+        listEl.appendChild(li);
+      });
+    }
+
+    function renderEpsList(items) {
+      const listEl = document.getElementById('list-eps');
+      listEl.innerHTML = '';
+      items.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.className = 'li-eps';
+        const textSpan = document.createElement('span');
+        textSpan.innerHTML = `<strong>${item.sport}</strong><br><span class="date-badge">🎒 ${item.materiel}</span>`;
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '✕';
+        delBtn.className = 'btn-delete';
+        delBtn.onclick = () => removeItem('eps', index);
+
+        li.appendChild(textSpan);
+        li.appendChild(delBtn);
+        listEl.appendChild(li);
+      });
+    }
+
+    function removeItem(type, index) {
+      if (type === 'prog') appData.programme.splice(index, 1);
+      if (type === 'dev') appData.devoirs.splice(index, 1);
+      if (type === 'exam') appData.examens.splice(index, 1);
+      if (type === 'eps') appData.eps.splice(index, 1);
+      saveAndRender();
+    }
+
+    document.getElementById('form-prog').addEventListener('submit', (e) => {
+      e.preventDefault();
+      appData.programme.push({ jour: document.getElementById('prog-jour').value, cours: document.getElementById('prog-cours').value });
+      e.target.reset(); saveAndRender();
+    });
+
+    document.getElementById('form-dev').addEventListener('submit', (e) => {
+      e.preventDefault();
+      appData.devoirs.push({ title: document.getElementById('dev-titre').value, date: document.getElementById('dev-date').value });
+      e.target.reset(); saveAndRender();
+    });
+
+    document.getElementById('form-exam').addEventListener('submit', (e) => {
+      e.preventDefault();
+      appData.examens.push({ title: document.getElementById('exam-nom').value, date: document.getElementById('exam-date').value });
+      e.target.reset(); saveAndRender();
+    });
+
+    document.getElementById('form-eps').addEventListener('submit', (e) => {
+      e.preventDefault();
+      appData.eps.push({ sport: document.getElementById('eps-sport').value, materiel: document.getElementById('eps-mat').value });
+      e.target.reset(); saveAndRender();
+    });
+
+    saveAndRender();
+  </script>
+</body>
+</html>
