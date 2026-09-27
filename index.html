@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon Agenda Scolaire & Suivi d'Études</title>
+  <style>
+    :root {
+      --maths: #2980b9;
+      --arabe: #27ae60;
+      --francais: #c0392b;
+      --anglais: #8e44ad;
+      --histoire: #d35400;
+      --geographie: #16a085;
+      --physique-chimie: #2c3e50;
+      --physique-humaine: #27ae60;
+      --civique: #f39c12;
+      --islamique: #1e824c;
+      --eps: #e67e22;
+      --info: #8e44ad;
+      --tamazight: #d35400;
+    }
+
+    * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background-color: #f4f7f6; margin: 0; padding: 20px; color: #2c3e50; }
+    
+    header {
+      text-align: center;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      color: white;
+      padding: 25px;
+      border-radius: 16px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    header h1 { margin: 0; font-size: 1.8rem; }
+    header p { margin: 5px 0 0 0; opacity: 0.9; font-size: 0.95rem; }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    /* Formulaires de saisie */
+    .forms-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .form-card {
+      background: white;
+      padding: 18px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      border-top: 4px solid #2a5298;
+    }
+
+    .form-card h3 { margin-top: 0; font-size: 1.05rem; color: #1e3c72; display: flex; align-items: center; gap: 8px; }
+
+    form { display: flex; flex-direction: column; gap: 8px; }
+    input, select {
+      padding: 10px;
+      border: 1px solid #dcdfe6;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: #2a5298; }
+
+    button {
+      background: #2a5298;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    button:hover { background: #1e3c72; }
+
+    /* Section Emploi du temps (Grille 8 sur 6) */
+    .timetable-title { font-size: 1.4rem; color: #1e3c72; margin-bottom: 15px; }
+    .timetable-wrapper {
+      overflow-x: auto;
+      margin-bottom: 35px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    .timetable {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      min-width: 800px;
+    }
+    .timetable th {
+      background: #1e3c72;
+      color: white;
+      padding: 12px;
+      text-align: center;
+      border: 1px solid #dcdfe6;
+      font-weight: bold;
+    }
+    .timetable td {
+      border: 1px solid #dcdfe6;
+      padding: 10px;
+      vertical-align: top;
+      width: 16.66%;
+    }
+    .timetable .time-cell {
+      background: #eef2f7;
+      font-weight: bold;
+      text-align: center;
+      vertical-align: middle;
+      color: #1e3c72;
+    }
+
+    /* Badges de matières & Types (TP/TD) */
+    .badges-container { margin-bottom: 4px; }
+    
+    .badge-mat {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .badge-type {
+      display: inline-block;
+      padding: 3px 6px;
+      border-radius: 6px;
+      background: #34495e;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: bold;
+      margin-right: 4px;
+    }
+
+    .mat-Mathématiques { background-color: var(--maths); }
+    .mat-Arabe { background-color: var(--arabe); }
+    .mat-Français { background-color: var(--francais); }
+    .mat-Anglais { background-color: var(--anglais); }
+    .mat-Histoire { background-color: var(--histoire); }
+    .mat-Géographie { background-color: var(--geographie); }
+    .mat-Physique-Chimie { background-color: var(--physique-chimie); }
+    .mat-Physique-Humaine { background-color: var(--physique-humaine); }
+    .mat-Éducation-Civique { background-color: var(--civique); }
+    .mat-Éducation-Islamique { background-color: var(--islamique); }
+    .mat-Informatique { background-color: var(--info); }
+    .mat-Tamazight { background-color: var(--tamazight); }
+    .mat-EPS { background-color: var(--eps); }
+
+    /* Cartes de cours / devoirs */
+    .item-card {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      padding: 8px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      position: relative;
+      font-size: 0.85rem;
+    }
+    .item-card:last-child { margin-bottom: 0; }
+    .item-card .room { font-style: italic; color: #777; font-size: 0.8rem; margin-top: 4px; }
+    
+    .btn-del {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: #e74c3c;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      font-size: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Autres sections (Devoirs, Examens, EPS) */
+    .lists-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .section-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>📚 Mon Agenda Scolaire & Suivi d'Études</h1>
+      <p>Sauvegarde automatique des cours (Cours/TP/TD), devoirs, examens et EPS</p>
+    </header>
+
+    <!-- Formulaires d'ajout -->
+    <div class="forms-grid">
+      
+      <!-- Ajouter un cours -->
+      <div class="form-card">
+        <h3>📅 Ajouter au programme</h3>
+        <form id="form-cours">
+          <select id="cours-jour" required>
+            <option value="">Choisir le jour...</option>
+            <option value="Dimanche">Dimanche</option>
+            <option value="Lundi">Lundi</option>
+            <option value="Mardi">Mardi</option>
+            <option value="Mercredi">Mercredi</option>
+            <option value="Jeudi">Jeudi</option>
+          </select>
+          <select id="cours-heure" required>
+            <option value="">Choisir l'heure (8 heures max)</option>
+            <option value="08h00 - 09h00">08h00 - 09h00</option>
+            <option value="09h00 - 10h00">09h00 - 10h00</option>
+            <option value="10h00 - 11h00">10h00 - 11h00</option>
+            <option value="11h00 - 12h00">11h00 - 12h00</option>
+            <option value="13h00 - 14h00">13h00 - 14h00</option>
+            <option value="14h00 - 15h00">14h00 - 15h00</option>
+            <option value="15h00 - 16h00">15h00 - 16h00</option>
+            <option value="16h00 - 17h00">16h00 - 17h00</option>
+          </select>
+          <!-- NOUVEAU : Type de cours (TP / TD) -->
+          <select id="cours-type" required>
+            <option value="Cours">Cours normal</option>
+            <option value="TP">TP (Travaux Pratiques)</option>
+            <option value="TD">TD (Travaux Dirigés)</option>
+          </select>
+          <select id="cours-matiere" required>
+            <option value="">Choisir la matière (10+)...</option>
+            <option value="Mathématiques">Mathématiques</option>
+            <option value="Arabe">Arabe</option>
+            <option value="Français">Français</option>
+            <option value="Anglais">Anglais</option>
+            <option value="Histoire">Histoire</option>
+            <option value="Géographie">Géographie</option>
+            <option value="Physique-Chimie">Physique / Sciences</option>
+            <option value="Physique-Humaine">SVT / Sciences Nat</option>
+            <option value="Éducation-Civique">Éducation civique</option>
+            <option value="Éducation-Islamique">Éducation islamique</option>
+            <option value="Informatique">Informatique</option>
+            <option value="Tamazight">Tamazight</option>
+            <option value="EPS">EPS</option>
+          </select>
+          <input type="text" id="cours-salle" placeholder="Salle / Groupe (Optionnel)">
+          <button type="submit">Enregistrer le cours</button>
+        </form>
+      </div>
+
+      <!-- Ajouter un devoir -->
+      <div class="form-card" style="border-top-color: #e74c3c;">
+        <h3>📝 Devoir à faire</h3>
+        <form id="form-devoir">
+          <select id="devoir-matiere" required>
+            <option value="">Choisir la matière...</option>
+            <option value="Mathématiques">Mathématiques</option>
+            <option value="Arabe">Arabe</option>
+            <option value="Français">Français</option>
+            <option value="Anglais">Anglais</option>
+            <option value="Histoire">Histoire</option>
+            <option value="Géographie">Géographie</option>
+            <option value="Physique-Chimie">Physique / Sciences</option>
+            <option value="Physique-Humaine">SVT / Sciences Nat</option>
+            <option value="Éducation-Civique">Éducation civique</option>
+            <option value="Éducation-Islamique">Éducation islamique</option>
+            <option value="Informatique">Informatique</option>
+            <option value="Tamazight">Tamazight</option>
+          </select>
+          <input type="date" id="devoir-date" required>
+          <input type="text" id="devoir-desc" placeholder="Ex: Exercice 4 p. 52" required>
+          <button type="submit" style="background:#e74c3c;">Ajouter le devoir</button>
+        </form>
+      </div>
+
+      <!-- Ajouter un examen -->
+      <div class="form-card" style="border-top-color: #f39c12;">
+        <h3>🎯 Examen / Contrôle</h3>
+        <form id="form-examen">
+          <select id="examen-matiere" required>
+            <option value="">Choisir la matière...</option>
+            <option value="Mathématiques">Mathématiques</option>
+            <option value="Arabe">Arabe</option>
+            <option value="Français">Français</option>
+            <option value="Anglais">Anglais</option>
+            <option value="Histoire">Histoire</option>
+            <option value="Géographie">Géographie</option>
+            <option value="Physique-Chimie">Physique / Sciences</option>
+            <option value="Physique-Humaine">SVT / Sciences Nat</option>
+            <option value="Éducation-Civique">Éducation civique</option>
+            <option value="Éducation-Islamique">Éducation islamique</option>
+            <option value="Informatique">Informatique</option>
+            <option value="Tamazight">Tamazight</option>
+          </select>
+          <input type="date" id="examen-date" required>
+          <input type="text" id="examen-desc" placeholder="Ex: Devoir de rattrapage" required>
+          <button type="submit" style="background:#f39c12;">Ajouter l'examen</button>
+        </form>
+      </div>
+
+      <!-- Section EPS Spéciale -->
+      <div class="form-card" style="border-top-color: #e67e22;">
+        <h3>🏃 EPS & Équipement</h3>
+        <form id="form-eps">
+          <input type="text" id="eps-sport" placeholder="Activité (ex: Course, Gym, Natation)" required>
+          <input type="text" id="eps-mat" placeholder="À prendre (ex: Baskets, Gourde, Tenue)" required>
+          <button type="submit" style="background:#e67e22;">Ajouter rappel EPS</button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- Emploi du temps de la semaine (Grille 8x6) -->
+    <h2 class="timetable-title">📅 Emploi du Temps (Dimanche ➔ Jeudi)</h2>
+    <div class="timetable-wrapper">
+      <table class="timetable">
+        <thead>
+          <tr>
+            <th>Heure</th>
+            <th>Dimanche</th>
+            <th>Lundi</th>
+            <th>Mardi</th>
+            <th>Mercredi</th>
+            <th>Jeudi</th>
+          </tr>
+        </thead>
+        <tbody id="timetable-body">
+          <!-- Généré par JavaScript -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Devoirs, Examens et EPS -->
+    <div class="lists-grid">
+      <div class="section-card">
+        <h3>📝 Liste des Devoirs</h3>
+        <div id="devoirs-list"></div>
+      </div>
+      <div class="section-card">
+        <h3>🎯 Examens à venir</h3>
+        <div id="examens-list"></div>
+      </div>
+      <div class="section-card">
+        <h3>🏃 Rappels EPS</h3>
+        <div id="eps-list"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // J'utilise mySchoolAppDataV3 pour intégrer les TP et TD proprement
+    let data = JSON.parse(localStorage.getItem('mySchoolAppDataV3')) || {
+      cours: [],
+      devoirs: [],
+      examens: [],
+      eps: []
+    };
+
+    function save() {
+      localStorage.setItem('mySchoolAppDataV3', JSON.stringify(data));
+      render();
+    }
+
+    const timeSlots = [
+      "08h00 - 09h00", "09h00 - 10h00", "10h00 - 11h00", "11h00 - 12h00",
+      "13h00 - 14h00", "14h00 - 15h00", "15h00 - 16h00", "16h00 - 17h00"
+    ];
+    const days = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi"];
+
+    function render() {
+      // 1. Remplir le tableau 8 sur 6
+      const tbody = document.getElementById('timetable-body');
+      tbody.innerHTML = '';
+
+      timeSlots.forEach(time => {
+        const tr = document.createElement('tr');
+        
+        // Colonne de l'heure
+        const tdTime = document.createElement('td');
+        tdTime.className = 'time-cell';
+        tdTime.innerText = time;
+        tr.appendChild(tdTime);
+
+        // Colonnes des jours
+        days.forEach(day => {
+          const td = document.createElement('td');
+          const courses = data.cours.filter(c => c.jour === day && c.heure === time);
+          
+          courses.forEach(c => {
+            const originalIndex = data.cours.indexOf(c);
+            
+            // Si c'est un TP ou TD on prépare un badge gris
+            const typeBadge = (c.type === 'TP' || c.type === 'TD') 
+              ? `<span class="badge-type">${c.type}</span>` 
+              : '';
+
+            const div = document.createElement('div');
+            div.className = 'item-card';
+            div.innerHTML = `
+              <button class="btn-del" onclick="deleteItem('cours', ${originalIndex})">✕</button>
+              <div class="badges-container">
+                ${typeBadge}
+                <span class="badge-mat mat-${c.matiere}">${c.matiere.replace('-', ' ')}</span>
+              </div>
+              ${c.salle ? `<div class="room">📍 ${c.salle}</div>` : ''}
+            `;
+            td.appendChild(div);
+          });
+          
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      // 2. Afficher les devoirs
+      const devContainer = document.getElementById('devoirs-list');
+      devContainer.innerHTML = '';
+      data.devoirs.forEach((d, index) => {
+        const div = document.createElement('div');
+        div.className = 'item-card';
+        div.innerHTML = `
+          <button class="btn-del" onclick="deleteItem('devoirs', ${index})">✕</button>
+          <span class="badge-mat mat-${d.matiere}">${d.matiere.replace('-', ' ')}</span>
+          <div style="margin-top:5px;"><strong>Pour le : ${d.date}</strong></div>
+          <div>${d.desc}</div>
+        `;
+        devContainer.appendChild(div);
+      });
+
+      // 3. Afficher les examens
+      const examContainer = document.getElementById('examens-list');
+      examContainer.innerHTML = '';
+      data.examens.forEach((ex, index) => {
+        const div = document.createElement('div');
+        div.className = 'item-card';
+        div.innerHTML = `
+          <button class="btn-del" onclick="deleteItem('examens', ${index})">✕</button>
+          <span class="badge-mat mat-${ex.matiere}">${ex.matiere.replace('-', ' ')}</span>
+          <div style="margin-top:5px; color:#c0392b;"><strong>📅 Date : ${ex.date}</strong></div>
+          <div>${ex.desc}</div>
+        `;
+        examContainer.appendChild(div);
+      });
+
+      // 4. Afficher EPS
+      const epsContainer = document.getElementById('eps-list');
+      epsContainer.innerHTML = '';
+      data.eps.forEach((e, index) => {
+        const div = document.createElement('div');
+        div.className = 'item-card';
+        div.innerHTML = `
+          <button class="btn-del" onclick="deleteItem('eps', ${index})">✕</button>
+          <span class="badge-mat mat-EPS">EPS - ${e.sport}</span>
+          <div style="margin-top:5px;">🎒 <strong>Équipement :</strong> ${e.mat}</div>
+        `;
+        epsContainer.appendChild(div);
+      });
+    }
+
+    function deleteItem(type, index) {
+      data[type].splice(index, 1);
+      save();
+    }
+
+    // Gestionnaires de formulaires
+    document.getElementById('form-cours').addEventListener('submit', (e) => {
+      e.preventDefault();
+      data.cours.push({
+        jour: document.getElementById('cours-jour').value,
+        heure: document.getElementById('cours-heure').value,
+        type: document.getElementById('cours-type').value, // Enregistrement TP/TD
+        matiere: document.getElementById('cours-matiere').value,
+        salle: document.getElementById('cours-salle').value
+      });
+      e.target.reset();
+      // On remet le type sur "Cours" par défaut après l'ajout
+      document.getElementById('cours-type').value = "Cours";
+      save();
+    });
+
+    document.getElementById('form-devoir').addEventListener('submit', (e) => {
+      e.preventDefault();
+      data.devoirs.push({
+        matiere: document.getElementById('devoir-matiere').value,
+        date: document.getElementById('devoir-date').value,
+        desc: document.getElementById('devoir-desc').value
+      });
+      e.target.reset();
+      save();
+    });
+
+    document.getElementById('form-examen').addEventListener('submit', (e) => {
+      e.preventDefault();
+      data.examens.push({
+        matiere: document.getElementById('examen-matiere').value,
+        date: document.getElementById('examen-date').value,
+        desc: document.getElementById('examen-desc').value
+      });
+      e.target.reset();
+      save();
+    });
+
+    document.getElementById('form-eps').addEventListener('submit', (e) => {
+      e.preventDefault();
+      data.eps.push({
+        sport: document.getElementById('eps-sport').value,
+        mat: document.getElementById('eps-mat').value
+      });
+      e.target.reset();
+      save();
+    });
+
+    // Chargement au démarrage
+    render();
+  </script>
+</body>
+</html>
