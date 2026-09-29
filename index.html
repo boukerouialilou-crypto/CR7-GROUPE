@@ -1,0 +1,433 @@
+import React, { useState, useEffect } from 'react';
+import { Sun, Moon, LogOut, Plus, Trash2, Check, BookOpen, Clock, CalendarDays } from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
+
+// Initialize Firebase
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+// Ali's Schedule (Times on Y-axis, Days on X-axis)
+const aliSchedule = [
+  { time: '08:00 - 09:00', dim: 'Maths', lun: 'Anglais', mar: 'TP Sc/Phys', mer: 'Hist/Géo', jeu: 'Arabe' },
+  { time: '09:00 - 10:00', dim: 'TD Fran/Ang', lun: 'Français', mar: 'TP Sc/Phys', mer: 'Anglais', jeu: 'Arabe' },
+  { time: '10:00 - 11:00', dim: 'Arabe', lun: 'Maths', mar: 'Arabe', mer: 'TD Maths/Arb', jeu: 'Ed. Civique' },
+  { time: '11:00 - 12:00', dim: 'Français', lun: '—', mar: 'Arabe', mer: 'Maths', jeu: 'Anglais' },
+  { time: '12:00 - 13:30', isPause: true, label: 'Pause Déjeuner (1h30)' },
+  { time: '13:30 - 14:30', dim: 'Physique', lun: 'SVT', mar: '—', mer: 'Maths', jeu: 'Français' },
+  { time: '14:30 - 15:30', dim: 'Hist/Géo', lun: 'Ed. Islamique', mar: '—', mer: 'Maths', jeu: 'Maths' },
+  { time: '15:30 - 16:30', dim: '—', lun: 'Soutien Arabe', mar: '—', mer: 'Soutien Fran', jeu: 'Soutien Maths' }
+];
+
+// Melissa's Schedule (Days on Y-axis, Times on X-axis)
+const melissaSchedule = [
+  { 
+    day: 'Lundi', 
+    t1: ['Ed. Islamique', 'Lecture'], 
+    t2: ['Maths', 'Art'], 
+    t3: ['Maths', 'Français'], 
+    t4: ['Expression'] 
+  },
+  { 
+    day: 'Mardi', 
+    t1: ['Sport'], 
+    t2: ['Maths', 'Prod. Orale', 'Sc. Nat'], 
+    t3: ['Histoire', 'Ed. Civique'], 
+    t4: ['Sport'] 
+  },
+  { 
+    day: 'Mercredi', 
+    t1: ['Ed. Islamique', 'Récitation', 'Ed. Civ'], 
+    t2: ['Maths', 'Sport'], 
+    t3: ['Français', 'Lecture'], 
+    t4: ['Soutien Fran'] 
+  },
+  { 
+    day: 'Jeudi', 
+    t1: ['Ed. Islamique', 'Maths', 'Lecture'], 
+    t2: ['Maths', 'Géo', 'Art'], 
+    t3: ['Anglais', 'Art'], 
+    t4: ['Remédiation', 'Musique'] 
+  }
+];
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null); // 'Melissa' or 'Ali'
+  const [theme, setTheme] = useState('light');
+  const [loginInput, setLoginInput] = useState('');
+  const [loginError, setLoginError] = useState('');
+  
+  const [tasks, setTasks] = useState([]);
+  const [newTaskText, setNewTaskText] = useState('');
+  const [isTasksLoading, setIsTasksLoading] = useState(false);
+
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (err) {
+        console.error("Auth Error:", err);
+      }
+    };
+    initAuth();
+    
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!user || !profile) {
+      setTasks([]);
+      return;
+    }
+    
+    setIsTasksLoading(true);
+    // Strict path compliance: artifacts/{appId}/users/{userId}/{collectionName}
+    const collectionName = `homework_${profile.toLowerCase()}`;
+    const tasksRef = collection(db, 'artifacts', appId, 'users', user.uid, collectionName);
+    
+    const unsubscribe = onSnapshot(
+      tasksRef, 
+      (snapshot) => {
+        const fetchedTasks = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        // Sort in memory to avoid complex query indexing issues
+        fetchedTasks.sort((a, b) => b.createdAt - a.createdAt);
+        setTasks(fetchedTasks);
+        setIsTasksLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching tasks:", error);
+        setIsTasksLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user, profile]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const name = loginInput.trim().toLowerCase();
+    if (name === 'melissa') {
+      setProfile('Melissa');
+      setLoginError('');
+    } else if (name === 'ali') {
+      setProfile('Ali');
+      setLoginError('');
+    } else {
+      setLoginError("Nom invalide. Entrez 'Melissa' ou 'Ali'.");
+    }
+  };
+
+  const handleLogout = () => {
+    setProfile(null);
+    setLoginInput('');
+  };
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  const addTask = async (e) => {
+    e.preventDefault();
+    if (!newTaskText.trim() || !user || !profile) return;
+    
+    const collectionName = `homework_${profile.toLowerCase()}`;
+    const tasksRef = collection(db, 'artifacts', appId, 'users', user.uid, collectionName);
+    
+    try {
+      await addDoc(tasksRef, {
+        text: newTaskText.trim(),
+        completed: false,
+        createdAt: Date.now()
+      });
+      setNewTaskText('');
+    } catch (err) {
+      console.error("Error adding task:", err);
+    }
+  };
+
+  const toggleTask = async (taskId, currentStatus) => {
+    if (!user || !profile) return;
+    const collectionName = `homework_${profile.toLowerCase()}`;
+    const taskRef = doc(db, 'artifacts', appId, 'users', user.uid, collectionName, taskId);
+    
+    try {
+      await updateDoc(taskRef, { completed: !currentStatus });
+    } catch (err) {
+      console.error("Error updating task:", err);
+    }
+  };
+
+  const deleteTask = async (taskId) => {
+    if (!user || !profile) return;
+    const collectionName = `homework_${profile.toLowerCase()}`;
+    const taskRef = doc(db, 'artifacts', appId, 'users', user.uid, collectionName, taskId);
+    
+    try {
+      await deleteDoc(taskRef);
+    } catch (err) {
+      console.error("Error deleting task:", err);
+    }
+  };
+
+  if (!profile) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${theme === 'dark' ? 'dark bg-gray-900' : 'bg-gray-100'}`}>
+        <div className="absolute top-4 right-4">
+          <button onClick={toggleTheme} className="p-2 rounded-full bg-white dark:bg-gray-800 shadow-md text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+            {theme === 'light' ? <Moon size={24} /> : <Sun size={24} />}
+          </button>
+        </div>
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl w-full max-w-md mx-4">
+          <div className="flex justify-center mb-6">
+            <div className="bg-indigo-100 dark:bg-indigo-900 p-4 rounded-full">
+              <BookOpen className="text-indigo-600 dark:text-indigo-400" size={40} />
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-white">Mon Espace Scolaire</h1>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Qui êtes-vous ?</label>
+              <input
+                type="text"
+                value={loginInput}
+                onChange={(e) => setLoginInput(e.target.value)}
+                placeholder="Entrez Melissa ou Ali"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition"
+              />
+            </div>
+            {loginError && <p className="text-red-500 text-sm font-medium">{loginError}</p>}
+            <button
+              type="submit"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-md transition-transform active:scale-95"
+            >
+              Accéder au programme
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+      <div className="dark:text-white text-gray-900 pb-12">
+        {/* Navigation / Header */}
+        <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-10">
+          <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="bg-indigo-600 text-white p-2 rounded-lg">
+                <BookOpen size={24} />
+              </div>
+              <h1 className="text-xl font-bold">Espace de {profile}</h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={toggleTheme} 
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-600 dark:text-gray-300"
+                aria-label="Toggle Theme"
+              >
+                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition font-medium text-sm"
+              >
+                <LogOut size={16} />
+                <span>Quitter</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {}
+          <section className="lg:col-span-2 space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <div className={`p-4 ${profile === 'Ali' ? 'bg-indigo-700 dark:bg-indigo-900' : 'bg-gray-200 dark:bg-gray-700'} flex items-center gap-3`}>
+                <CalendarDays className={profile === 'Ali' ? 'text-indigo-200' : 'text-gray-600 dark:text-gray-300'} size={24} />
+                <h2 className={`text-lg font-bold ${profile === 'Ali' ? 'text-white' : 'text-gray-800 dark:text-white'}`}>
+                  Emploi du temps
+                </h2>
+              </div>
+              
+              <div className="p-0 overflow-x-auto">
+                {profile === 'Ali' ? (
+                  <table className="w-full text-sm text-center border-collapse">
+                    <thead>
+                      <tr className="bg-indigo-50 dark:bg-gray-750 text-indigo-900 dark:text-indigo-200 border-b dark:border-gray-700">
+                        <th className="p-3 border-r dark:border-gray-700 font-bold bg-indigo-100 dark:bg-indigo-950/50">Temps</th>
+                        <th className="p-3 border-r dark:border-gray-700 font-bold">Dimanche</th>
+                        <th className="p-3 border-r dark:border-gray-700 font-bold">Lundi</th>
+                        <th className="p-3 border-r dark:border-gray-700 font-bold">Mardi</th>
+                        <th className="p-3 border-r dark:border-gray-700 font-bold">Mercredi</th>
+                        <th className="p-3 font-bold">Jeudi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {aliSchedule.map((row, i) => (
+                        <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-750/50 transition-colors">
+                          <td className="p-3 border-r dark:border-gray-700 font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 whitespace-nowrap">
+                            {row.time}
+                          </td>
+                          {row.isPause ? (
+                            <td colSpan={5} className="p-3 bg-amber-100/50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-400 font-bold tracking-wide">
+                              {row.label}
+                            </td>
+                          ) : (
+                            <>
+                              <td className="p-3 border-r dark:border-gray-700">{row.dim}</td>
+                              <td className="p-3 border-r dark:border-gray-700">{row.lun}</td>
+                              <td className="p-3 border-r dark:border-gray-700">{row.mar}</td>
+                              <td className="p-3 border-r dark:border-gray-700">{row.mer}</td>
+                              <td className="p-3">{row.jeu}</td>
+                            </>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <table className="w-full text-sm text-center border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-b dark:border-gray-600">
+                        <th className="p-3 border-r dark:border-gray-600 font-bold bg-gray-200 dark:bg-gray-600">Jours</th>
+                        <th className="p-3 border-r dark:border-gray-600 font-bold">8:30 - 10:00</th>
+                        <th className="p-3 border-r dark:border-gray-600 font-bold">10:00 - 11:45</th>
+                        <th className="p-3 border-r dark:border-gray-600 font-bold">13:00 - 15:00</th>
+                        <th className="p-3 font-bold">15:15 - 16:00</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                      {melissaSchedule.map((row, i) => (
+                        <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          <td className="p-3 border-r dark:border-gray-600 font-bold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 whitespace-nowrap">
+                            {row.day}
+                          </td>
+                          <td className="p-3 border-r dark:border-gray-600">
+                            {row.t1.map((subject, idx) => <div key={idx} className="py-1">{subject}</div>)}
+                          </td>
+                          <td className="p-3 border-r dark:border-gray-600">
+                            {row.t2.map((subject, idx) => <div key={idx} className="py-1">{subject}</div>)}
+                          </td>
+                          <td className="p-3 border-r dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+                            {row.t3.map((subject, idx) => <div key={idx} className="py-1">{subject}</div>)}
+                          </td>
+                          <td className="p-3">
+                            {row.t4.map((subject, idx) => <div key={idx} className="py-1">{subject}</div>)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {}
+          <section className="lg:col-span-1">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col overflow-hidden">
+              <div className="p-4 bg-emerald-600 dark:bg-emerald-800 flex items-center gap-3">
+                <BookOpen className="text-emerald-100" size={24} />
+                <h2 className="text-lg font-bold text-white">Cahier de Textes</h2>
+              </div>
+              
+              <div className="p-4 flex-1 flex flex-col">
+                <form onSubmit={addTask} className="flex gap-2 mb-6">
+                  <input
+                    type="text"
+                    value={newTaskText}
+                    onChange={(e) => setNewTaskText(e.target.value)}
+                    placeholder="Ajouter un devoir..."
+                    className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                  />
+                  <button 
+                    type="submit" 
+                    disabled={!newTaskText.trim()}
+                    className="p-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:hover:bg-emerald-600 text-white rounded-lg transition"
+                  >
+                    <Plus size={20} />
+                  </button>
+                </form>
+
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                  {isTasksLoading ? (
+                    <div className="flex justify-center items-center h-24">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600"></div>
+                    </div>
+                  ) : tasks.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <Check size={40} className="mx-auto mb-3 opacity-20" />
+                      <p className="text-sm">Aucun devoir pour le moment !</p>
+                    </div>
+                  ) : (
+                    <ul className="space-y-3">
+                      {tasks.map(task => (
+                        <li 
+                          key={task.id} 
+                          className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${task.completed ? 'bg-gray-50 dark:bg-gray-800/50 border-transparent opacity-60' : 'bg-white dark:bg-gray-700 border-gray-100 dark:border-gray-600 shadow-sm'}`}
+                        >
+                          <button
+                            onClick={() => toggleTask(task.id, task.completed)}
+                            className={`mt-0.5 flex-shrink-0 h-5 w-5 rounded-md border flex items-center justify-center transition-colors ${task.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 dark:border-gray-500 hover:border-emerald-500 dark:hover:border-emerald-400'}`}
+                          >
+                            {task.completed && <Check size={14} strokeWidth={3} />}
+                          </button>
+                          
+                          <span className={`flex-1 text-sm ${task.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                            {task.text}
+                          </span>
+                          
+                          <button
+                            onClick={() => deleteTask(task.id)}
+                            className="text-gray-400 hover:text-red-500 transition-colors"
+                            aria-label="Supprimer le devoir"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </main>
+      </div>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(156, 163, 175, 0.5);
+          border-radius: 10px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(75, 85, 99, 0.5);
+        }
+      `}} />
+    </div>
+  );
+}
