@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tchat entre Amis</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      height: 85vh;
+      background-color: #1e293b;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #334155;
+    }
+
+    /* Screen Join */
+    #login-screen {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 8px;
+      color: #38bdf8;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      margin-bottom: 25px;
+      font-size: 14px;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background-color: #0f172a;
+      color: #fff;
+      font-size: 16px;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: #38bdf8;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      background-color: #0284c7;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #0369a1;
+    }
+
+    /* Screen Chat */
+    #chat-screen {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .chat-header {
+      padding: 16px 20px;
+      background-color: #0f172a;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .room-info h2 {
+      font-size: 18px;
+      color: #38bdf8;
+    }
+
+    .room-info p {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .messages-container {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message {
+      max-width: 75%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+
+    .message.sent {
+      align-self: flex-end;
+      background-color: #0284c7;
+      color: white;
+      border-bottom-right-radius: 2px;
+    }
+
+    .message.received {
+      align-self: flex-start;
+      background-color: #334155;
+      color: #f8fafc;
+      border-bottom-left-radius: 2px;
+    }
+
+    .message .sender {
+      font-size: 11px;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+
+    .chat-input-area {
+      padding: 16px;
+      background-color: #0f172a;
+      border-top: 1px solid #334155;
+      display: flex;
+      gap: 10px;
+    }
+
+    .chat-input-area input {
+      flex: 1;
+    }
+
+    .send-btn {
+      width: auto;
+      padding: 0 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Connexion au Salon -->
+    <div id="login-screen">
+      <h1 class="title">Tchat Privé</h1>
+      <p class="subtitle">Entrez le même nom de salon avec votre ami pour parler en direct.</p>
+      
+      <div class="input-group">
+        <label for="username">Votre Pseudo</label>
+        <input type="text" id="username" placeholder="Ex: MonPseudo">
+      </div>
+
+      <div class="input-group">
+        <label for="room">Nom du Salon de Discussion</label>
+        <input type="text" id="room" placeholder="Ex: salon-secret-123">
+      </div>
+
+      <button class="btn" onclick="joinRoom()">Rejoindre le Tchat</button>
+    </div>
+
+    <!-- Interface de Tchat -->
+    <div id="chat-screen">
+      <div class="chat-header">
+        <div class="room-info">
+          <h2 id="display-room">Salon</h2>
+          <p id="display-user">Connecté en tant que </p>
+        </div>
+        <button class="btn" style="width: auto; padding: 6px 12px; font-size: 12px; background-color: #ef4444;" onclick="location.reload()">Quitter</button>
+      </div>
+
+      <div class="messages-container" id="messages"></div>
+
+      <div class="chat-input-area">
+        <input type="text" id="message-input" placeholder="Écrivez votre message..." onkeypress="handleKeyPress(event)">
+        <button class="btn send-btn" onclick="sendMessage()">Envoyer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase JavaScript SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <script>
+    // Configuration Firebase pour la transmission en temps réel
+    const firebaseConfig = {
+      databaseURL: "https://chat-app-default-rtdb.firebaseio.com/"
+    };
+
+    // Initialisation
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+
+    let currentUser = "";
+    let currentRoom = "";
+
+    function joinRoom() {
+      const usernameInput = document.getElementById('username').value.trim();
+      const roomInput = document.getElementById('room').value.trim();
+
+      if (!usernameInput || !roomInput) {
+        alert("Veuillez remplir votre pseudo et le nom du salon !");
+        return;
+      }
+
+      currentUser = usernameInput;
+      currentRoom = roomInput.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+
+      document.getElementById('display-room').innerText = "Salon : " + currentRoom;
+      document.getElementById('display-user').innerText = "Connecté en tant que : " + currentUser;
+
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('chat-screen').style.display = 'flex';
+
+      // Écouter les messages en temps réel dans ce salon
+      db.ref('rooms/' + currentRoom).on('child_added', (snapshot) => {
+        const data = snapshot.val();
+        displayMessage(data.sender, data.text);
+      });
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('message-input');
+      const text = input.value.trim();
+
+      if (!text) return;
+
+      // Envoyer le message dans la base de données de la room
+      db.ref('rooms/' + currentRoom).push({
+        sender: currentUser,
+        text: text,
+        timestamp: Date.now()
+      });
+
+      input.value = "";
+    }
+
+    function displayMessage(sender, text) {
+      const container = document.getElementById('messages');
+      const msgDiv = document.createElement('div');
+      
+      const isMe = sender === currentUser;
+      msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
+
+      if (!isMe) {
+        const senderDiv = document.createElement('div');
+        senderDiv.className = 'sender';
+        senderDiv.innerText = sender;
+        msgDiv.appendChild(senderDiv);
+      }
+
+      const textNode = document.createTextNode(text);
+      msgDiv.appendChild(textNode);
+
+      container.appendChild(msgDiv);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function handleKeyPress(e) {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    }
+  </script>
+</body>
+</html>
