@@ -1,0 +1,330 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Academy 🐍</title>
+<style>
+:root {
+  --bg:#f3f5fb;
+  --panel:#ffffff;
+  --text:#20243a;
+  --muted:#737b91;
+  --primary:#6655e8;
+  --code:#171b2b;
+}
+body.dark {
+  --bg:#111426;
+  --panel:#1c2138;
+  --text:#f4f4ff;
+  --muted:#a9aec4;
+  --primary:#9385ff;
+  --code:#090d19;
+}
+* {box-sizing:border-box}
+body {
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  transition:.2s;
+}
+header {
+  background:var(--panel);
+  padding:17px 5%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:1px solid #8883;
+}
+.logo {font-size:22px;font-weight:bold;color:var(--primary)}
+button {
+  cursor:pointer;
+  border:0;
+  border-radius:10px;
+  padding:11px 16px;
+  background:var(--primary);
+  color:white;
+  font-weight:bold;
+}
+.layout {
+  display:grid;
+  grid-template-columns:250px 1fr;
+  min-height:calc(100vh - 65px);
+}
+aside {
+  background:var(--panel);
+  padding:24px 16px;
+  border-right:1px solid #8883;
+}
+aside h3 {color:var(--muted);font-size:13px}
+.lesson {
+  display:block;
+  width:100%;
+  text-align:left;
+  margin:8px 0;
+  background:transparent;
+  color:var(--text);
+  font-weight:normal;
+}
+.lesson.active {background:var(--primary);color:white}
+main {padding:35px;max-width:1000px;width:100%}
+.card {
+  background:var(--panel);
+  padding:24px;
+  border-radius:17px;
+  margin-bottom:20px;
+  box-shadow:0 4px 18px #00000008;
+}
+h1 {font-size:32px}
+p {line-height:1.7;color:var(--muted)}
+pre {
+  background:var(--code);
+  color:#a9f5c1;
+  padding:20px;
+  border-radius:12px;
+  overflow:auto;
+  line-height:1.7;
+}
+.progress {
+  height:10px;
+  background:#8883;
+  border-radius:20px;
+  overflow:hidden;
+}
+#bar {
+  height:100%;
+  background:#35bd82;
+  width:0%;
+  transition:.3s;
+}
+.answer {
+  display:block;
+  background:var(--bg);
+  color:var(--text);
+  width:100%;
+  margin:9px 0;
+  text-align:left;
+}
+#feedback {font-weight:bold}
+@media(max-width:700px) {
+  .layout {grid-template-columns:1fr}
+  aside {border-right:0}
+  main {padding:15px}
+  header {padding:15px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🐍 Python Academy</div>
+  <button onclick="document.body.classList.toggle('dark')">
+    🌙 / ☀️
+  </button>
+</header>
+
+<div class="layout">
+<aside>
+  <h3>TON APPRENTISSAGE</h3>
+  <div id="menu"></div>
+  <hr>
+  <p>⭐ Progression</p>
+  <div class="progress"><div id="bar"></div></div>
+  <p id="percent">0% terminé</p>
+</aside>
+
+<main>
+  <div class="card">
+    <p>BIENVENUE DANS TON ACADÉMIE</p>
+    <h1 id="title">Apprends Python ! 🚀</h1>
+    <p id="description">
+      Découvre la programmation étape par étape.
+      Choisis une leçon dans le menu pour commencer.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>📖 Leçon</h2>
+    <div id="content">
+      Bienvenue ! Sélectionne ta première leçon.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>💻 Exemple de code</h2>
+    <pre id="code">print("Bonjour le monde !")</pre>
+    <button onclick="copyCode()">📋 Copier le code</button>
+  </div>
+
+  <div class="card">
+    <h2>🧠 Petit exercice</h2>
+    <p id="question">Quel est le rôle de print() ?</p>
+    <div id="answers"></div>
+    <p id="feedback"></p>
+  </div>
+
+  <button onclick="complete()">✅ Terminer cette leçon</button>
+  <button onclick="nextLesson()">➡️ Leçon suivante</button>
+</main>
+</div>
+
+<script>
+const lessons = [
+{
+title:"1. Découvrir Python",
+desc:"Ton premier programme !",
+content:"Python est un langage de programmation. La commande print() permet d'afficher du texte à l'écran.",
+code:'print("Bonjour le monde !")',
+question:"Que fait print() ?",
+answers:["Affiche un texte","Supprime un fichier","Éteint le PC"],
+correct:0
+},
+{
+title:"2. Les variables",
+desc:"Stocker des informations",
+content:"Une variable permet de garder une information. On peut y stocker un nom, un âge ou un nombre.",
+code:'nom = "Ali"\\nage = 13\\nprint(nom)\\nprint(age)',
+question:"Que contient la variable age ?",
+answers:["Un prénom","Le nombre 13","Une image"],
+correct:1
+},
+{
+title:"3. Les nombres",
+desc:"Faire des calculs",
+content:"Python peut faire des additions, soustractions, multiplications et divisions.",
+code:'a = 10\\nb = 5\\nprint(a + b)\\nprint(a * b)',
+question:"Combien vaut 10 + 5 ?",
+answers:["15","50","5"],
+correct:0
+},
+{
+title:"4. Les conditions",
+desc:"Utiliser if et else",
+content:"Les conditions permettent à ton programme de prendre des décisions.",
+code:'age = 13\\n\\nif age >= 18:\\n    print("Adulte")\\nelse:\\n    print("Mineur")',
+question:"Quel mot signifie sinon ?",
+answers:["if","print","else"],
+correct:2
+},
+{
+title:"5. Les boucles",
+desc:"Répéter des instructions",
+content:"Une boucle for permet de répéter une action plusieurs fois.",
+code:'for i in range(5):\\n    print("Bonjour")',
+question:"Combien de fois Bonjour est-il affiché ?",
+answers:["2 fois","5 fois","10 fois"],
+correct:1
+},
+{
+title:"6. Les listes",
+desc:"Ranger plusieurs éléments",
+content:"Une liste permet de stocker plusieurs valeurs dans une seule variable.",
+code:'fruits = ["pomme", "banane", "orange"]\\nprint(fruits[0])',
+question:"Quel fruit est affiché ?",
+answers:["Banane","Orange","Pomme"],
+correct:2
+},
+{
+title:"7. Les fonctions",
+desc:"Créer ses propres commandes",
+content:"Une fonction regroupe des instructions que tu peux réutiliser.",
+code:'def bonjour():\\n    print("Salut !")\\n\\nbonjour()',
+question:"Quel mot permet de définir une fonction ?",
+answers:["def","if","for"],
+correct:0
+},
+{
+title:"8. Ton premier mini-projet",
+desc:"Créer un petit programme",
+content:"Félicitations ! Tu connais maintenant plusieurs notions importantes de Python. Voici un mini-programme qui demande le prénom de l'utilisateur.",
+code:'nom = input("Quel est ton prénom ? ")\\nprint("Bienvenue", nom)',
+question:"Quelle commande demande une information à l'utilisateur ?",
+answers:["input()","print()","range()"],
+correct:0
+}
+];
+
+let current = 0;
+let completed = JSON.parse(localStorage.getItem("pythonDone") || "[]");
+let answered = false;
+
+function renderMenu() {
+  document.getElementById("menu").innerHTML = "";
+  lessons.forEach((l,i)=>{
+    const b=document.createElement("button");
+    b.className="lesson"+(i===current?" active":"");
+    b.textContent=(completed.includes(i)?"✅ ":"📘 ")+l.title;
+    b.onclick=()=>showLesson(i);
+    document.getElementById("menu").appendChild(b);
+  });
+  let percent=Math.round(completed.length/lessons.length*100);
+  document.getElementById("bar").style.width=percent+"%";
+  document.getElementById("percent").textContent=percent+"% terminé";
+}
+
+function showLesson(i) {
+  current=i;
+  answered=false;
+  let l=lessons[i];
+  document.getElementById("title").textContent=l.title;
+  document.getElementById("description").textContent=l.desc;
+  document.getElementById("content").textContent=l.content;
+  document.getElementById("code").textContent=l.code;
+  document.getElementById("question").textContent=l.question;
+  document.getElementById("feedback").textContent="";
+  document.getElementById("answers").innerHTML="";
+  l.answers.forEach((a,n)=>{
+    let b=document.createElement("button");
+    b.className="answer";
+    b.textContent=a;
+    b.onclick=()=>check(n);
+    document.getElementById("answers").appendChild(b);
+  });
+  renderMenu();
+}
+
+function check(n) {
+  if(answered)return;
+  answered=true;
+  let l=lessons[current];
+  let f=document.getElementById("feedback");
+  if(n===l.correct) {
+    f.textContent="🎉 Bravo ! Bonne réponse.";
+    f.style.color="#24a66d";
+  } else {
+    f.textContent="❌ Pas tout à fait ! Relis la leçon et réessaie.";
+    f.style.color="#e35b5b";
+    answered=false;
+  }
+}
+
+function complete() {
+  if(!completed.includes(current)) {
+    completed.push(current);
+    localStorage.setItem("pythonDone",JSON.stringify(completed));
+  }
+  renderMenu();
+  if(completed.length===lessons.length) {
+    alert("🏆 Félicitations ! Tu as terminé toutes les leçons !");
+  } else {
+    alert("Leçon terminée ! Continue comme ça !");
+  }
+}
+
+function nextLesson() {
+  if(current<lessons.length-1) showLesson(current+1);
+  else alert("Tu es arrivé à la dernière leçon !");
+}
+
+function copyCode() {
+  navigator.clipboard.writeText(lessons[current].code)
+    .then(()=>alert("Code copié !"));
+}
+
+renderMenu();
+showLesson(0);
+</script>
+</body>
+</html>
